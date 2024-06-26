@@ -193,7 +193,6 @@ pub trait CaptureBackendTrait {
         label: Option<&'a str>,
     ) -> Result<WgpuTexture, NokhwaError> {
         use crate::pixel_format::RgbAFormat;
-        use std::num::NonZeroU32;
         let frame = self.frame()?.decode_image::<RgbAFormat>()?;
 
         let texture_size = Extent3d {
@@ -210,14 +209,15 @@ pub trait CaptureBackendTrait {
             dimension: TextureDimension::D2,
             format: TextureFormat::Rgba8UnormSrgb,
             usage: TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST,
+            view_formats: &[],
         });
 
-        let width_nonzero = match NonZeroU32::try_from(4 * frame.width()) {
+        let width_nonzero = match u32::try_from(4 * frame.width()) {
             Ok(w) => Some(w),
             Err(why) => return Err(NokhwaError::ReadFrameError(why.to_string())),
         };
 
-        let height_nonzero = match NonZeroU32::try_from(frame.height()) {
+        let height_nonzero = match u32::try_from(frame.height()) {
             Ok(h) => Some(h),
             Err(why) => return Err(NokhwaError::ReadFrameError(why.to_string())),
         };

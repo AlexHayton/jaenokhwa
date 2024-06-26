@@ -2604,12 +2604,12 @@ impl JSCamera {
             usage: TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST,
         });
 
-        let width_nonzero = match NonZeroU32::try_from(4 * resolution.width()) {
+        let width_nonzero = match u32::try_from(4 * resolution.width()) {
             Ok(w) => Some(w),
             Err(why) => return Err(NokhwaError::ReadFrameError(why.to_string())),
         };
 
-        let height_nonzero = match NonZeroU32::try_from(resolution.height()) {
+        let height_nonzero = match u32::try_from(resolution.height()) {
             Ok(h) => Some(h),
             Err(why) => return Err(NokhwaError::ReadFrameError(why.to_string())),
         };

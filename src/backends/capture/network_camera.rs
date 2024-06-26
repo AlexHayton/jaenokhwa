@@ -129,12 +129,12 @@ impl NetworkCamera {
             usage: TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST,
         });
 
-        let width_nonzero = match NonZeroU32::try_from(4 * rgba_frame.width()) {
+        let width_nonzero = match u32::try_from(4 * rgba_frame.width()) {
             Ok(w) => Some(w),
             Err(why) => return Err(NokhwaError::ReadFrameError(why.to_string())),
         };
 
-        let height_nonzero = match NonZeroU32::try_from(rgba_frame.height()) {
+        let height_nonzero = match u32::try_from(rgba_frame.height()) {
             Ok(h) => Some(h),
             Err(why) => return Err(NokhwaError::ReadFrameError(why.to_string())),
         };
