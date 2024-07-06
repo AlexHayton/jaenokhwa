@@ -275,6 +275,11 @@ pub mod wmf {
 
         let mut device_list = vec![];
 
+        // return early if we have no devices connected
+        if count >= 0 {
+            return Ok(device_list);
+        }
+
         unsafe { from_raw_parts(unused_mf_activate.assume_init(), count as usize) }
             .iter()
             .for_each(|pointer| {
@@ -639,7 +644,10 @@ pub mod wmf {
 
                 let frame_fmt = match guid_to_frameformat(fourcc) {
                     Some(fcc) => fcc,
-                    None => continue,
+                    None => {
+                        index += 1;
+                        continue;
+                    }
                 };
 
                 for frame_rate in framerate_list {
