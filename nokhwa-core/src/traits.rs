@@ -172,7 +172,7 @@ pub trait CaptureBackendTrait {
         let cfmt = self.camera_format();
         let resolution = cfmt.resolution();
         let pxwidth = match cfmt.format() {
-            FrameFormat::MJPEG | FrameFormat::YUYV | FrameFormat::RAWRGB | FrameFormat::NV12 => 3,
+            FrameFormat::MJPEG | FrameFormat::YUYV | FrameFormat::RAWRGB | FrameFormat::NV12 | FrameFormat::UYVY => 3,
             FrameFormat::GRAY => 1,
         };
         if alpha {
@@ -193,6 +193,7 @@ pub trait CaptureBackendTrait {
         label: Option<&'a str>,
     ) -> Result<WgpuTexture, NokhwaError> {
         use crate::pixel_format::RgbAFormat;
+        use std::num::NonZeroU32;
         let frame = self.frame()?.decode_image::<RgbAFormat>()?;
 
         let texture_size = Extent3d {

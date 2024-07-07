@@ -14,351 +14,17 @@
 * limitations under the License.
 */
 
-// hello, future peng here
-// whatever is written here will induce horrors uncomprehendable.
-// save yourselves. write apple code in swift and bind it to rust.
-
 #![allow(clippy::not_unsafe_ptr_arg_deref)]
 
 #[cfg(any(target_os = "macos", target_os = "ios"))]
 #[macro_use]
 extern crate objc;
 
+use four_cc::FourCC;
+use core_media::AVCaptureExposureTargetBiasCurrent;
+
 #[cfg(any(target_os = "macos", target_os = "ios"))]
 mod internal {
-
-    #[allow(non_snake_case)]
-    pub mod core_media {
-        // all of this is stolen from bindgen
-        // steal it idc
-        use crate::internal::CGFloat;
-        use core_media_sys::{
-            CMBlockBufferRef, CMFormatDescriptionRef, CMSampleBufferRef, CMTime, CMVideoDimensions,
-            FourCharCode,
-        };
-        use objc::{runtime::Object, Message};
-        use std::ops::Deref;
-
-        pub type Id = *mut Object;
-
-        #[repr(transparent)]
-        #[derive(Clone)]
-        pub struct NSObject(pub Id);
-        impl Deref for NSObject {
-            type Target = Object;
-            fn deref(&self) -> &Self::Target {
-                unsafe { &*self.0 }
-            }
-        }
-        unsafe impl Message for NSObject {}
-        impl NSObject {
-            pub fn alloc() -> Self {
-                Self(unsafe { msg_send!(objc::class!(NSObject), alloc) })
-            }
-        }
-
-        #[repr(transparent)]
-        #[derive(Clone)]
-        pub struct NSString(pub Id);
-        impl Deref for NSString {
-            type Target = Object;
-            fn deref(&self) -> &Self::Target {
-                unsafe { &*self.0 }
-            }
-        }
-        unsafe impl Message for NSString {}
-        impl NSString {
-            pub fn alloc() -> Self {
-                Self(unsafe { msg_send!(objc::class!(NSString), alloc) })
-            }
-        }
-
-        pub type AVMediaType = NSString;
-
-        #[allow(non_snake_case)]
-        #[link(name = "CoreMedia", kind = "framework")]
-        extern "C" {
-            pub fn CMVideoFormatDescriptionGetDimensions(
-                videoDesc: CMFormatDescriptionRef,
-            ) -> CMVideoDimensions;
-
-            pub fn CMTimeMake(value: i64, scale: i32) -> CMTime;
-
-            pub fn CMBlockBufferGetDataLength(theBuffer: CMBlockBufferRef) -> std::os::raw::c_int;
-
-            pub fn CMBlockBufferCopyDataBytes(
-                theSourceBuffer: CMBlockBufferRef,
-                offsetToData: usize,
-                dataLength: usize,
-                destination: *mut std::os::raw::c_void,
-            ) -> std::os::raw::c_int;
-
-            pub fn CMSampleBufferGetDataBuffer(sbuf: CMSampleBufferRef) -> CMBlockBufferRef;
-
-            pub fn dispatch_queue_create(
-                label: *const std::os::raw::c_char,
-                attr: NSObject,
-            ) -> NSObject;
-
-            pub fn dispatch_release(object: NSObject);
-
-            pub fn CMSampleBufferGetImageBuffer(sbuf: CMSampleBufferRef) -> CVImageBufferRef;
-
-            pub fn CVPixelBufferLockBaseAddress(
-                pixelBuffer: CVPixelBufferRef,
-                lockFlags: CVPixelBufferLockFlags,
-            ) -> CVReturn;
-
-            pub fn CVPixelBufferUnlockBaseAddress(
-                pixelBuffer: CVPixelBufferRef,
-                unlockFlags: CVPixelBufferLockFlags,
-            ) -> CVReturn;
-
-            pub fn CVPixelBufferGetDataSize(pixelBuffer: CVPixelBufferRef)
-                -> std::os::raw::c_ulong;
-
-            pub fn CVPixelBufferGetBaseAddress(
-                pixelBuffer: CVPixelBufferRef,
-            ) -> *mut std::os::raw::c_void;
-
-            pub fn CVPixelBufferGetPixelFormatType(pixelBuffer: CVPixelBufferRef) -> OSType;
-        }
-
-        #[repr(C)]
-        #[derive(Clone, Debug, PartialEq, PartialOrd)]
-        pub struct CGPoint {
-            pub x: CGFloat,
-            pub y: CGFloat,
-        }
-
-        #[repr(C)]
-        #[derive(Debug, Copy, Clone)]
-        pub struct __CVBuffer {
-            _unused: [u8; 0],
-        }
-
-        #[allow(non_snake_case)]
-        #[derive(Copy, Clone, Debug, PartialOrd, PartialEq)]
-        #[repr(C)]
-        pub struct AVCaptureWhiteBalanceGains {
-            pub blueGain: f32,
-            pub greenGain: f32,
-            pub redGain: f32,
-        }
-
-        pub type CVBufferRef = *mut __CVBuffer;
-
-        pub type CVImageBufferRef = CVBufferRef;
-        pub type CVPixelBufferRef = CVImageBufferRef;
-        pub type CVPixelBufferLockFlags = u64;
-        pub type CVReturn = i32;
-
-        pub type OSType = FourCharCode;
-        pub type AVVideoCodecType = NSString;
-
-        #[link(name = "AVFoundation", kind = "framework")]
-        extern "C" {
-            pub static AVVideoCodecKey: NSString;
-            pub static AVVideoCodecTypeHEVC: AVVideoCodecType;
-            pub static AVVideoCodecTypeH264: AVVideoCodecType;
-            pub static AVVideoCodecTypeJPEG: AVVideoCodecType;
-            pub static AVVideoCodecTypeAppleProRes4444: AVVideoCodecType;
-            pub static AVVideoCodecTypeAppleProRes422: AVVideoCodecType;
-            pub static AVVideoCodecTypeAppleProRes422HQ: AVVideoCodecType;
-            pub static AVVideoCodecTypeAppleProRes422LT: AVVideoCodecType;
-            pub static AVVideoCodecTypeAppleProRes422Proxy: AVVideoCodecType;
-            pub static AVVideoCodecTypeHEVCWithAlpha: AVVideoCodecType;
-            pub static AVVideoCodecHEVC: NSString;
-            pub static AVVideoCodecH264: NSString;
-            pub static AVVideoCodecJPEG: NSString;
-            pub static AVVideoCodecAppleProRes4444: NSString;
-            pub static AVVideoCodecAppleProRes422: NSString;
-            pub static AVVideoWidthKey: NSString;
-            pub static AVVideoHeightKey: NSString;
-            pub static AVVideoExpectedSourceFrameRateKey: NSString;
-
-            pub static AVMediaTypeVideo: AVMediaType;
-            pub static AVMediaTypeAudio: AVMediaType;
-            pub static AVMediaTypeText: AVMediaType;
-            pub static AVMediaTypeClosedCaption: AVMediaType;
-            pub static AVMediaTypeSubtitle: AVMediaType;
-            pub static AVMediaTypeTimecode: AVMediaType;
-            pub static AVMediaTypeMetadata: AVMediaType;
-            pub static AVMediaTypeMuxed: AVMediaType;
-            pub static AVMediaTypeMetadataObject: AVMediaType;
-            pub static AVMediaTypeDepthData: AVMediaType;
-
-            pub static AVCaptureLensPositionCurrent: f32;
-            pub static AVCaptureExposureTargetBiasCurrent: f32;
-            pub static AVCaptureExposureDurationCurrent: CMTime;
-            pub static AVCaptureISOCurrent: f32;
-        }
-    }
-
-    use crate::core_media::{
-        dispatch_queue_create, AVCaptureExposureDurationCurrent,
-        AVCaptureExposureTargetBiasCurrent, AVCaptureISOCurrent, AVCaptureWhiteBalanceGains,
-        AVMediaTypeAudio, AVMediaTypeClosedCaption, AVMediaTypeDepthData, AVMediaTypeMetadata,
-        AVMediaTypeMetadataObject, AVMediaTypeMuxed, AVMediaTypeSubtitle, AVMediaTypeText,
-        AVMediaTypeTimecode, AVMediaTypeVideo, CGPoint, CMSampleBufferGetImageBuffer,
-        CMVideoFormatDescriptionGetDimensions, CVImageBufferRef, CVPixelBufferGetBaseAddress,
-        CVPixelBufferGetDataSize, CVPixelBufferLockBaseAddress, CVPixelBufferUnlockBaseAddress,
-        NSObject, OSType,
-    };
-
-    use block::ConcreteBlock;
-    use cocoa_foundation::{
-        base::Nil,
-        foundation::{NSArray, NSInteger, NSString, NSUInteger},
-    };
-    use core_media_sys::{
-        kCMPixelFormat_24RGB, kCMPixelFormat_422YpCbCr8_yuvs,
-        kCMPixelFormat_8IndexedGray_WhiteIsZero, kCMVideoCodecType_422YpCbCr8,
-        kCMVideoCodecType_JPEG, kCMVideoCodecType_JPEG_OpenDML, CMFormatDescriptionGetMediaSubType,
-        CMFormatDescriptionRef, CMSampleBufferRef, CMTime, CMVideoDimensions,
-    };
-    use core_video_sys::{
-        kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange,
-        kCVPixelFormatType_420YpCbCr8BiPlanarFullRange,
-    };
-    use flume::{Receiver, Sender};
-    use nokhwa_core::{
-        error::NokhwaError,
-        types::{
-            ApiBackend, CameraControl, CameraFormat, CameraIndex, CameraInfo,
-            ControlValueDescription, ControlValueSetter, FrameFormat, KnownCameraControl,
-            KnownCameraControlFlag, Resolution,
-        },
-    };
-    use objc::runtime::objc_getClass;
-    use objc::{
-        declare::ClassDecl,
-        runtime::{Class, Object, Protocol, Sel, BOOL, NO, YES},
-    };
-    use once_cell::sync::Lazy;
-    use std::ffi::CString;
-    use std::{
-        borrow::Cow,
-        cmp::Ordering,
-        collections::BTreeMap,
-        convert::TryFrom,
-        error::Error,
-        ffi::{c_float, c_void, CStr},
-        sync::Arc,
-    };
-
-    const UTF8_ENCODING: usize = 4;
-    type CGFloat = c_float;
-
-    macro_rules! create_boilerplate_impl {
-        {
-            $( [$class_vis:vis $class_name:ident : $( {$field_vis:vis $field_name:ident : $field_type:ty} ),*] ),+
-        } => {
-            $(
-                $class_vis struct $class_name {
-                    inner: *mut Object,
-                    $(
-                        $field_vis $field_name : $field_type
-                    )*
-                }
-
-                impl $class_name {
-                    pub fn inner(&self) -> *mut Object {
-                        self.inner
-                    }
-                }
-            )+
-        };
-
-        {
-            $( [$class_vis:vis $class_name:ident ] ),+
-        } => {
-            $(
-                $class_vis struct $class_name {
-                    inner: *mut Object,
-                }
-
-                impl $class_name {
-                    pub fn inner(&self) -> *mut Object {
-                        self.inner
-                    }
-                }
-
-                impl From<*mut Object> for $class_name {
-                    fn from(obj: *mut Object) -> Self {
-                        $class_name {
-                            inner: obj,
-                        }
-                    }
-                }
-            )+
-        };
-    }
-
-    fn str_to_nsstr(string: &str) -> *mut Object {
-        let cls = class!(NSString);
-        let bytes = string.as_ptr() as *const c_void;
-        unsafe {
-            let obj: *mut Object = msg_send![cls, alloc];
-            let obj: *mut Object = msg_send![
-                obj,
-                initWithBytes:bytes
-                length:string.len()
-                encoding:UTF8_ENCODING
-            ];
-            obj
-        }
-    }
-
-    fn nsstr_to_str<'a>(nsstr: *mut Object) -> Cow<'a, str> {
-        let data = unsafe { CStr::from_ptr(nsstr.UTF8String()) };
-        data.to_string_lossy()
-    }
-
-    fn vec_to_ns_arr<T: Into<*mut Object>>(data: Vec<T>) -> *mut Object {
-        let cstr = CString::new("NSMutableArray").unwrap();
-        let ns_arr_cls = unsafe { objc_getClass(cstr.as_ptr()) };
-        let mutable_array: *mut Object = unsafe { msg_send![ns_arr_cls, array] };
-        data.into_iter().for_each(|item| {
-            let item_obj: *mut Object = item.into();
-            let _: () = unsafe { msg_send![mutable_array, addObject: item_obj] };
-        });
-        mutable_array
-    }
-
-    fn ns_arr_to_vec<T: From<*mut Object>>(data: *mut Object) -> Vec<T> {
-        let length = unsafe { NSArray::count(data) };
-
-        let mut out_vec: Vec<T> = Vec::with_capacity(length as usize);
-        for index in 0..length {
-            let item = unsafe { NSArray::objectAtIndex(data, index) };
-            out_vec.push(T::from(item));
-        }
-        out_vec
-    }
-
-    fn try_ns_arr_to_vec<T, TE>(data: *mut Object) -> Result<Vec<T>, TE>
-    where
-        TE: Error,
-        T: TryFrom<*mut Object, Error = TE>,
-    {
-        let length = unsafe { NSArray::count(data) };
-
-        let mut out_vec: Vec<T> = Vec::with_capacity(length as usize);
-        for index in 0..length {
-            let item = unsafe { NSArray::objectAtIndex(data, index) };
-            out_vec.push(T::try_from(item)?);
-        }
-        Ok(out_vec)
-    }
-
-    fn compare_ns_string(this: *mut Object, other: core_media::NSString) -> bool {
-        unsafe {
-            let equal: BOOL = msg_send![this, isEqualToString: other];
-            equal == YES
-        }
-    }
-
     #[allow(non_upper_case_globals)]
     fn raw_fcc_to_frameformat(raw: OSType) -> Option<FrameFormat> {
         match raw {
@@ -410,6 +76,11 @@ mod internal {
                 didOutputSampleBuffer: CMSampleBufferRef,
                 _: *mut Object,
             ) {
+                let format = unsafe { CMSampleBufferGetFormatDescription(didOutputSampleBuffer) };
+                let media_subtype = unsafe { CMFormatDescriptionGetMediaSubType(format) };
+                let media_subtype_fcc = FourCC::from(media_subtype);
+                println!("media_subtype_fcc: {:?}", media_subtype_fcc);
+                
                 let image_buffer: CVImageBufferRef =
                     unsafe { CMSampleBufferGetImageBuffer(didOutputSampleBuffer) };
                 unsafe {
@@ -507,7 +178,6 @@ mod internal {
         status
     }
 
-    // fuck it, use deprecated APIs
     pub fn query_avfoundation() -> Result<Vec<CameraInfo>, NokhwaError> {
         Ok(AVCaptureDeviceDiscoverySession::new(vec![
             AVCaptureDeviceType::UltraWide,
@@ -521,6 +191,7 @@ mod internal {
 
     pub fn get_raw_device_info(index: CameraIndex, device: *mut Object) -> CameraInfo {
         let name = nsstr_to_str(unsafe { msg_send![device, localizedName] });
+        let uuid = nsstr_to_str(unsafe { msg_send![device, uniqueID] });
         let manufacturer = nsstr_to_str(unsafe { msg_send![device, manufacturer] });
         let position: AVCaptureDevicePosition = unsafe { msg_send![device, position] };
         let lens_aperture: f64 = unsafe { msg_send![device, lensAperture] };

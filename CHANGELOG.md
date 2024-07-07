@@ -1,3 +1,8 @@
+# 0.11.0
+- Forked from nokhwa, now we are called jaenokhwa... i.e. "Recording again"
+- Replaced custom bindings with Zhou Wei's av-foundation / core-media / core-video Rust crates
+- Use fourcc for the formats everywhere, as the previous pixel format enum was incomplete
+
 # 0.10.0
 - Split core types and traits into `nokhwa-core`
   - Now you can use `nokhwa`'s Camera types in your own packages, to e.g. create `nokhwa` extensions or use `nokhwa`'s decoders.  

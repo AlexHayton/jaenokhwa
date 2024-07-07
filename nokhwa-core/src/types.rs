@@ -1,4 +1,4 @@
-use crate::{error::NokhwaError, pixel_format::FormatDecoder};
+use crate::error::NokhwaError;
 #[cfg(feature = "serialize")]
 use serde::{Deserialize, Serialize};
 use std::{
@@ -42,19 +42,17 @@ impl Display for RequestedFormatType {
 
 /// A request to the camera for a valid [`CameraFormat`]
 #[derive(Copy, Clone, Debug, Hash, Ord, PartialOrd, Eq, PartialEq)]
-pub struct RequestedFormat<'a> {
+pub struct RequestedFormat {
     requested_format: RequestedFormatType,
-    wanted_decoder: &'a [FrameFormat],
 }
 
-impl RequestedFormat<'_> {
+impl RequestedFormat {
     /// Creates a new [`RequestedFormat`] by using the [`RequestedFormatType`] and getting the [`FrameFormat`]
     /// constraints from a generic type.
     #[must_use]
-    pub fn new<Decoder: FormatDecoder>(requested: RequestedFormatType) -> RequestedFormat<'static> {
+    pub fn new(requested: RequestedFormatType) -> RequestedFormat {
         RequestedFormat {
             requested_format: requested,
-            wanted_decoder: Decoder::FORMATS,
         }
     }
 
@@ -67,7 +65,6 @@ impl RequestedFormat<'_> {
     ) -> RequestedFormat {
         RequestedFormat {
             requested_format: requested,
-            wanted_decoder: decoder,
         }
     }
 
@@ -203,8 +200,8 @@ impl RequestedFormat<'_> {
     }
 }
 
-impl Display for RequestedFormat<'_> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl Display for RequestedFormat {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "{self:?}")
     }
 }
@@ -283,84 +280,6 @@ impl TryFrom<CameraIndex> for usize {
     fn try_from(value: CameraIndex) -> Result<Self, Self::Error> {
         value.as_index().map(|i| i as usize)
     }
-}
-
-/// Describes a frame format (i.e. how the bytes themselves are encoded). Often called `FourCC`.
-/// - YUYV is a mathematical color space. You can read more [here.](https://en.wikipedia.org/wiki/YCbCr)
-/// - NV12 is same as above. Note that a partial compression (e.g. [16, 235] may be coerced to [0, 255].
-/// - MJPEG is a motion-jpeg compressed frame, it allows for high frame rates.
-/// - GRAY is a grayscale image format, usually for specialized cameras such as IR Cameras.
-/// - RAWRGB is a Raw RGB888 format.
-#[derive(Copy, Clone, Debug, Hash, Ord, PartialOrd, Eq, PartialEq)]
-#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub enum FrameFormat {
-    MJPEG,
-    YUYV,
-    NV12,
-    GRAY,
-    RAWRGB,
-}
-
-impl Display for FrameFormat {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            FrameFormat::MJPEG => {
-                write!(f, "MJPEG")
-            }
-            FrameFormat::YUYV => {
-                write!(f, "YUYV")
-            }
-            FrameFormat::GRAY => {
-                write!(f, "GRAY")
-            }
-            FrameFormat::RAWRGB => {
-                write!(f, "RAWRGB")
-            }
-            FrameFormat::NV12 => {
-                write!(f, "NV12")
-            }
-        }
-    }
-}
-impl FromStr for FrameFormat {
-    type Err = NokhwaError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "MJPEG" => Ok(FrameFormat::MJPEG),
-            "YUYV" => Ok(FrameFormat::YUYV),
-            "GRAY" => Ok(FrameFormat::GRAY),
-            "RAWRGB" => Ok(FrameFormat::RAWRGB),
-            "NV12" => Ok(FrameFormat::NV12),
-            _ => Err(NokhwaError::StructureError {
-                structure: "FrameFormat".to_string(),
-                error: format!("No match for {s}"),
-            }),
-        }
-    }
-}
-
-/// Returns all the frame formats
-#[must_use]
-pub const fn frame_formats() -> &'static [FrameFormat] {
-    &[
-        FrameFormat::MJPEG,
-        FrameFormat::YUYV,
-        FrameFormat::NV12,
-        FrameFormat::GRAY,
-        FrameFormat::RAWRGB,
-    ]
-}
-
-/// Returns all the color frame formats
-#[must_use]
-pub const fn color_frame_formats() -> &'static [FrameFormat] {
-    &[
-        FrameFormat::MJPEG,
-        FrameFormat::YUYV,
-        FrameFormat::NV12,
-        FrameFormat::RAWRGB,
-    ]
 }
 
 /// Describes a Resolution.
@@ -1732,6 +1651,101 @@ pub fn yuyv444_to_rgba(y: i32, u: i32, v: i32) -> [u8; 4] {
     [r, g, b, 255]
 }
 
+/// Converts a 2VUY datastream to a RGB888 Stream. [For further reading](https://en.wikipedia.org/wiki/YUV#Converting_between_Y%E2%80%B2UV_and_RGB)
+/// # Errors
+/// This may error when the data stream size is wrong.
+#[inline]
+pub fn UYVY_to_rgb(
+    resolution: Resolution,
+    data: &[u8],
+    rgba: bool,
+) -> Result<Vec<u8>, NokhwaError> {
+    let pxsize = if rgba { 4 } else { 3 };
+    let mut dest = vec![0; (pxsize * resolution.width() * resolution.height()) as usize];
+    buf_UYVY_to_rgb(resolution, data, &mut dest, rgba)?;
+    Ok(dest)
+}
+
+#[inline]
+fn clamp(value: i32, min: i32, max: i32) -> i32 {
+    if value < min {
+        min
+    } else if value > max {
+        max
+    } else {
+        value
+    }
+}
+
+#[inline]
+fn yuv_to_rgb(y: i32, u: i32, v: i32) -> [u8; 3] {
+    let c = y - 16;
+    let d = u;
+    let e = v;
+
+    let r = (298 * c + 409 * e + 128) >> 8;
+    let g = (298 * c - 100 * d - 208 * e + 128) >> 8;
+    let b = (298 * c + 516 * d + 128) >> 8;
+
+    [
+        clamp(r, 0, 255) as u8,
+        clamp(g, 0, 255) as u8,
+        clamp(b, 0, 255) as u8,
+    ]
+}
+
+// 2vuy is not the same as NV12, but it is similar. The difference is that 2vuy has the U and V planes interleaved.
+#[inline]
+pub fn buf_UYVY_to_rgb(
+    resolution: Resolution,
+    data: &[u8],
+    dest: &mut [u8],
+    rgba: bool,
+) -> Result<(), NokhwaError> {
+    let width = dest.len() / if rgba { 4 } else { 3 };
+    let height = data.len() * 2 / (width * 3);
+    if width % 2 != 0 {
+        return Err(NokhwaError::StructureError {
+            structure: "Destination buffer".to_string(),
+            error: "Width must be divisible by 2".to_string(),
+        });
+    }
+    if data.len() % (width * height * 2) != 0 {
+        return Err(NokhwaError::StructureError {
+            structure: "Data stream".to_string(),
+            error: "Invalid size".to_string(),
+        });
+    }
+    let mut data_index = 0;
+    let mut dest_index = 0;
+    for _ in 0..height {
+        for x in (0..width).step_by(2) {
+            let u = data[data_index] as i32 - 128;
+            let y1 = data[data_index + 1] as i32;
+            let v = data[data_index + 2] as i32 - 128;
+            let y2 = data[data_index + 3] as i32;
+            let rgb1 = yuv_to_rgb(y1, u, v);
+            let rgb2 = yuv_to_rgb(y2, u, v);
+            dest[dest_index] = rgb1[0];
+            dest[dest_index + 1] = rgb1[1];
+            dest[dest_index + 2] = rgb1[2];
+            if rgba {
+                dest[dest_index + 3] = 255; // Alpha value
+            }
+            dest_index += if rgba { 4 } else { 3 };
+            dest[dest_index] = rgb2[0];
+            dest[dest_index + 1] = rgb2[1];
+            dest[dest_index + 2] = rgb2[2];
+            if rgba {
+                dest[dest_index + 3] = 255; // Alpha value
+            }
+            dest_index += if rgba { 4 } else { 3 };
+            data_index += 4;
+        }
+    }
+    Ok(())
+}
+
 /// Converts a YUYV 4:2:0 bi-planar (NV12) datastream to a RGB888 Stream. [For further reading](https://en.wikipedia.org/wiki/YUV#Converting_between_Y%E2%80%B2UV_and_RGB)
 /// # Errors
 /// This may error when the data stream size is wrong.
@@ -1765,10 +1779,15 @@ pub fn buf_nv12_to_rgb(
         return Err(NokhwaError::ProcessFrameError {
             src: FrameFormat::NV12,
             destination: "RGB".to_string(),
-            error: "bad resolution".to_string(),
+            error: "Both height and width must be divisible by two".to_string(),
         });
     }
 
+    // The total size of a frame is W x H x 3 / 2 Where W is width and H is height.
+    // 1 frame in vga resolution is 460800 bytes, where
+    // Y-part is 640x480 bytes
+    // Cb-part is 640*480/4=76800 bytes
+    // Cr-part is 640*480/4=76800 bytes
     if data.len() != ((resolution.width() * resolution.height() * 3) / 2) as usize {
         return Err(NokhwaError::ProcessFrameError {
             src: FrameFormat::NV12,

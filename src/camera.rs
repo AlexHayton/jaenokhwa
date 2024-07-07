@@ -18,7 +18,6 @@ use nokhwa_core::types::RequestedFormatType;
 use nokhwa_core::{
     buffer::Buffer,
     error::NokhwaError,
-    pixel_format::FormatDecoder,
     traits::CaptureBackendTrait,
     types::{
         ApiBackend, CameraControl, CameraFormat, CameraIndex, CameraInfo, ControlValueSetter,
@@ -394,11 +393,8 @@ impl Camera {
     /// Directly writes the current frame into said `buffer`.
     /// # Errors
     /// If the backend fails to get the frame (e.g. already taken, busy, doesn't exist anymore), or [`open_stream()`](CaptureBackendTrait::open_stream()) has not been called yet, this will error.
-    pub fn write_frame_to_buffer<F: FormatDecoder>(
-        &mut self,
-        buffer: &mut [u8],
-    ) -> Result<(), NokhwaError> {
-        self.device.frame()?.decode_image_to_buffer::<F>(buffer)
+    pub fn write_frame_to_buffer(&mut self, buffer: &mut [u8]) -> Result<(), NokhwaError> {
+        self.device.frame()?.decode_image_to_buffer(buffer)
     }
 
     #[cfg(feature = "output-wgpu")]
@@ -406,7 +402,7 @@ impl Camera {
     /// Directly copies a frame to a Wgpu texture. This will automatically convert the frame into a RGBA frame.
     /// # Errors
     /// If the frame cannot be captured or the resolution is 0 on any axis, this will error.
-    pub fn frame_texture<'a, F: FormatDecoder>(
+    pub fn frame_texture<'a>(
         &mut self,
         device: &WgpuDevice,
         queue: &WgpuQueue,
@@ -429,7 +425,6 @@ impl Drop for Camera {
     }
 }
 
-// TODO: Update as we go
 #[allow(clippy::ifs_same_cond)]
 fn figure_out_auto() -> Option<ApiBackend> {
     let platform = std::env::consts::OS;
@@ -440,8 +435,6 @@ fn figure_out_auto() -> Option<ApiBackend> {
         cap = ApiBackend::MediaFoundation;
     } else if cfg!(feature = "input-avfoundation") && (platform == "macos" || platform == "ios") {
         cap = ApiBackend::AVFoundation;
-    } else if cfg!(feature = "input-opencv") {
-        cap = ApiBackend::OpenCv;
     }
     if cap == ApiBackend::Auto {
         return None;

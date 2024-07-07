@@ -39,7 +39,6 @@ mod init;
 #[cfg_attr(feature = "docs-features", doc(cfg(feature = "input-jscam")))]
 pub mod js_camera;
 
-pub use nokhwa_core::pixel_format::FormatDecoder;
 mod query;
 /// A camera that runs in a different thread and can call your code based on callbacks.
 #[cfg(feature = "output-threaded")]

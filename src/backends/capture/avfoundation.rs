@@ -27,7 +27,7 @@ use nokhwa_core::{
     traits::CaptureBackendTrait,
     types::{
         ApiBackend, CameraControl, CameraFormat, CameraIndex, CameraInfo, ControlValueSetter,
-        FrameFormat, KnownCameraControl, RequestedFormat, RequestedFormatType, Resolution,
+        KnownCameraControl, RequestedFormat, RequestedFormatType, Resolution,
     },
 };
 #[cfg(target_os = "macos")]
