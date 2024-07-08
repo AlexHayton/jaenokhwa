@@ -18,9 +18,10 @@ use crate::Camera;
 use nokhwa_core::{
     buffer::Buffer,
     error::NokhwaError,
+    pixel_format::GRAY,
     types::{
         ApiBackend, CameraControl, CameraFormat, CameraIndex, CameraInfo, ControlValueSetter,
-        FrameFormat, KnownCameraControl, RequestedFormat, RequestedFormatType, Resolution,
+        KnownCameraControl, RequestedFormat, RequestedFormatType, Resolution,
     },
 };
 use std::thread::JoinHandle;
@@ -88,7 +89,7 @@ impl CallbackCamera {
             last_frame_captured: Arc::new(Mutex::new(Buffer::new(
                 Resolution::new(0, 0),
                 &vec![],
-                FrameFormat::GRAY,
+                GRAY,
             ))),
             die_bool: Arc::new(Default::default()),
             current_camera,
@@ -107,7 +108,7 @@ impl CallbackCamera {
             last_frame_captured: Arc::new(Mutex::new(Buffer::new(
                 Resolution::new(0, 0),
                 &vec![],
-                FrameFormat::GRAY,
+                GRAY,
             ))),
             die_bool: Arc::new(Default::default()),
             current_camera,

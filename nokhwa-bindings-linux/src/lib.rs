@@ -431,7 +431,7 @@ mod internal {
             let v4l_fcc = match new_fmt.format() {
                 FrameFormat::MJPEG => FourCC::new(b"MJPG"),
                 FrameFormat::YUYV => FourCC::new(b"YUYV"),
-                FrameFormat::GRAY => FourCC::new(b"GRAY"),
+                GRAY => FourCC::new(b"GRAY"),
                 FrameFormat::RAWRGB => FourCC::new(b"RGB3"),
                 FrameFormat::NV12 => FourCC::new(b"NV12"),
             };
@@ -788,7 +788,7 @@ mod internal {
         match fourcc.str().ok()? {
             "YUYV" => Some(FrameFormat::YUYV),
             "MJPG" => Some(FrameFormat::MJPEG),
-            "GRAY" => Some(FrameFormat::GRAY),
+            "GRAY" => Some(GRAY),
             "RGB3" => Some(FrameFormat::RAWRGB),
             "NV12" => Some(FrameFormat::NV12),
             _ => None,
@@ -799,7 +799,7 @@ mod internal {
         match fourcc {
             FrameFormat::MJPEG => FourCC::new(b"MJPG"),
             FrameFormat::YUYV => FourCC::new(b"YUYV"),
-            FrameFormat::GRAY => FourCC::new(b"GRAY"),
+            GRAY => FourCC::new(b"GRAY"),
             FrameFormat::RAWRGB => FourCC::new(b"RGB3"),
             FrameFormat::NV12 => FourCC::new(b"NV12"),
         }

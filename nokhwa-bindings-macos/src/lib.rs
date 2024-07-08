@@ -25,14 +25,16 @@ use core_media::AVCaptureExposureTargetBiasCurrent;
 
 #[cfg(any(target_os = "macos", target_os = "ios"))]
 mod internal {
+    use nokhwa_core::types::CameraInfo;
+
     #[allow(non_upper_case_globals)]
-    fn raw_fcc_to_frameformat(raw: OSType) -> Option<FrameFormat> {
+    fn raw_fcc_to_fourcc(raw: OSType) -> Option<FourCC> {
         match raw {
             kCMVideoCodecType_422YpCbCr8 | kCMPixelFormat_422YpCbCr8_yuvs => {
                 Some(FrameFormat::YUYV)
             }
             kCMVideoCodecType_JPEG | kCMVideoCodecType_JPEG_OpenDML => Some(FrameFormat::MJPEG),
-            kCMPixelFormat_8IndexedGray_WhiteIsZero => Some(FrameFormat::GRAY),
+            kCMPixelFormat_8IndexedGray_WhiteIsZero => Some(GRAY),
             kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange
             | kCVPixelFormatType_420YpCbCr8BiPlanarFullRange
             | 875704438 => Some(FrameFormat::NV12),
@@ -103,7 +105,7 @@ mod internal {
                     let ptr = bufferlck_cv.cast::<Sender<(Vec<u8>, FrameFormat)>>();
                     Arc::from_raw(ptr)
                 };
-                if let Err(_) = buffer_sndr.send((buffer_as_vec, FrameFormat::GRAY)) {
+                if let Err(_) = buffer_sndr.send((buffer_as_vec, GRAY)) {
                     // FIXME: dont, what the fuck???
                     return;
                 }

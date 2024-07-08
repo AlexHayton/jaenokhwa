@@ -43,6 +43,9 @@ four-cc = "0.4.0"
 ffimage = "0.10.0"
 ffimage_yuv = "0.10.0"
 
+[patch.crates-io]
+four-cc = { git = "https://github.com/AlexHayton/four-cc.git" }
+
 [dependencies.nokhwa-core]
 version = "0.1.0"
 path = "nokhwa-core"

@@ -17,11 +17,13 @@
 use crate::{
     buffer::Buffer,
     error::NokhwaError,
+    pixel_format::{MJPEG, NV12, RAWRGB, UYVY, YUYV, GRAY},
     types::{
-        ApiBackend, CameraControl, CameraFormat, CameraInfo, ControlValueSetter, FrameFormat,
+        ApiBackend, CameraControl, CameraFormat, CameraInfo, ControlValueSetter,
         KnownCameraControl, Resolution,
     },
 };
+use four_cc::FourCC;
 use std::{borrow::Cow, collections::HashMap};
 #[cfg(feature = "wgpu-types")]
 use wgpu::{
@@ -65,7 +67,7 @@ pub trait CaptureBackendTrait {
     /// This will error if the camera is not queryable or a query operation has failed. Some backends will error this out as a Unsupported Operation ([`UnsupportedOperationError`](crate::error::NokhwaError::UnsupportedOperationError)).
     fn compatible_list_by_resolution(
         &mut self,
-        fourcc: FrameFormat,
+        fourcc: FourCC,
     ) -> Result<HashMap<Resolution, Vec<u32>>, NokhwaError>;
 
     /// Gets the compatible [`CameraFormat`] of the camera
@@ -87,7 +89,7 @@ pub trait CaptureBackendTrait {
     /// A Vector of compatible [`FrameFormat`]s. Will only return 2 elements at most.
     /// # Errors
     /// This will error if the camera is not queryable or a query operation has failed. Some backends will error this out as a Unsupported Operation ([`UnsupportedOperationError`](crate::error::NokhwaError::UnsupportedOperationError)).
-    fn compatible_fourcc(&mut self) -> Result<Vec<FrameFormat>, NokhwaError>;
+    fn compatible_fourcc(&mut self) -> Result<Vec<FourCC>, NokhwaError>;
 
     /// Gets the current camera resolution (See: [`Resolution`], [`CameraFormat`]). This will force refresh to the current latest if it has changed.
     fn resolution(&self) -> Resolution;
@@ -111,8 +113,8 @@ pub trait CaptureBackendTrait {
     /// If you started the stream and the camera rejects the new framerate, this will return an error.
     fn set_frame_rate(&mut self, new_fps: u32) -> Result<(), NokhwaError>;
 
-    /// Gets the current camera's frame format (See: [`FrameFormat`], [`CameraFormat`]). This will force refresh to the current latest if it has changed.
-    fn frame_format(&self) -> FrameFormat;
+    /// Gets the current camera's frame format (See: [`FourCC`], [`CameraFormat`]). This will force refresh to the current latest if it has changed.
+    fn frame_format(&self) -> FourCC;
 
     /// Will set the current [`FrameFormat`]
     /// This will reset the current stream if used while stream is opened.
@@ -120,7 +122,7 @@ pub trait CaptureBackendTrait {
     /// This will also update the cache.
     /// # Errors
     /// If you started the stream and the camera rejects the new frame format, this will return an error.
-    fn set_frame_format(&mut self, fourcc: FrameFormat) -> Result<(), NokhwaError>;
+    fn set_frame_format(&mut self, fourcc: FourCC) -> Result<(), NokhwaError>;
 
     /// Gets the value of [`KnownCameraControl`].
     /// # Errors
@@ -166,14 +168,14 @@ pub trait CaptureBackendTrait {
     fn frame_raw(&mut self) -> Result<Cow<[u8]>, NokhwaError>;
 
     /// The minimum buffer size needed to write the current frame. If `alpha` is true, it will instead return the minimum size of the buffer with an alpha channel as well.
-    /// This assumes that you are decoding to RGB/RGBA for [`FrameFormat::MJPEG`] or [`FrameFormat::YUYV`] and Luma8/LumaA8 for [`FrameFormat::GRAY`]
+    /// This assumes that you are decoding to RGB/RGBA for [`FrameFormat::MJPEG`] or [`FrameFormat::YUYV`] and Luma8/LumaA8 for [`GRAY`]
     #[must_use]
     fn decoded_buffer_size(&self, alpha: bool) -> usize {
         let cfmt = self.camera_format();
         let resolution = cfmt.resolution();
         let pxwidth = match cfmt.format() {
-            FrameFormat::MJPEG | FrameFormat::YUYV | FrameFormat::RAWRGB | FrameFormat::NV12 | FrameFormat::UYVY => 3,
-            FrameFormat::GRAY => 1,
+            GRAY => 1,
+            _ => 3,
         };
         if alpha {
             return (resolution.width() * resolution.height() * (pxwidth + 1)) as usize;

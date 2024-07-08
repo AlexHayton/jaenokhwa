@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-use crate::types::{ApiBackend, FrameFormat};
+use crate::types::ApiBackend;
+use four_cc::FourCC;
 use thiserror::Error;
 
 /// All errors in `nokhwa`.
@@ -47,7 +48,7 @@ pub enum NokhwaError {
     ReadFrameError(String),
     #[error("Could not process frame {src} to {destination}: {error}")]
     ProcessFrameError {
-        src: FrameFormat,
+        src: FourCC,
         destination: String,
         error: String,
     },

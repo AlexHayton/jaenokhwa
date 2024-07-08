@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+use four_cc::FourCC;
 use nokhwa_core::types::RequestedFormatType;
 use nokhwa_core::{
     buffer::Buffer,
@@ -21,7 +22,7 @@ use nokhwa_core::{
     traits::CaptureBackendTrait,
     types::{
         ApiBackend, CameraControl, CameraFormat, CameraIndex, CameraInfo, ControlValueSetter,
-        FrameFormat, KnownCameraControl, RequestedFormat, Resolution,
+        KnownCameraControl, RequestedFormat, Resolution,
     },
 };
 use std::{borrow::Cow, collections::HashMap};
@@ -69,15 +70,11 @@ impl Camera {
         width: u32,
         height: u32,
         fps: u32,
-        fourcc: FrameFormat,
+        fourcc: FourCC,
         backend: ApiBackend,
     ) -> Result<Self, NokhwaError> {
         let camera_format = CameraFormat::new_from(width, height, fourcc, fps);
-        Camera::with_backend(
-            index,
-            RequestedFormat::with_formats(RequestedFormatType::Exact(camera_format), &[fourcc]),
-            backend,
-        )
+        Camera::with_backend(index, camera_format, backend)
     }
 
     /// Allows creation of a [`Camera`] with a custom backend. This is useful if you are creating e.g. a custom module.
@@ -105,10 +102,9 @@ impl Camera {
             self.device.stop_stream()?;
         }
         let new_camera_format = self.device.camera_format();
-        let temp = vec![new_camera_format.format()];
         let new_camera = init_camera(
             new_idx,
-            RequestedFormat::with_formats(RequestedFormatType::Exact(new_camera_format), &temp),
+            RequestedFormat::from_camera_format(new_camera_format),
             self.api,
         )?;
         self.device = new_camera;
@@ -129,12 +125,7 @@ impl Camera {
             self.device.stop_stream()?;
         }
         let new_camera_format = self.device.camera_format();
-        let temp = vec![new_camera_format.format()];
-        let new_camera = init_camera(
-            &self.idx,
-            RequestedFormat::with_formats(RequestedFormatType::Exact(new_camera_format), &temp),
-            new_backend,
-        )?;
+        let new_camera = init_camera(&self.idx, new_camera_format.format(), new_backend)?;
         self.device = new_camera;
         Ok(())
     }
@@ -197,7 +188,7 @@ impl Camera {
     /// This will error if the camera is not queryable or a query operation has failed. Some backends will error this out as a [`UnsupportedOperationError`](crate::NokhwaError::UnsupportedOperationError).
     pub fn compatible_list_by_resolution(
         &mut self,
-        fourcc: FrameFormat,
+        fourcc: FourCC,
     ) -> Result<HashMap<Resolution, Vec<u32>>, NokhwaError> {
         self.device.compatible_list_by_resolution(fourcc)
     }
@@ -205,7 +196,7 @@ impl Camera {
     /// A Vector of compatible [`FrameFormat`]s.
     /// # Errors
     /// This will error if the camera is not queryable or a query operation has failed. Some backends will error this out as a [`UnsupportedOperationError`](crate::NokhwaError::UnsupportedOperationError).
-    pub fn compatible_fourcc(&mut self) -> Result<Vec<FrameFormat>, NokhwaError> {
+    pub fn compatible_fourcc(&mut self) -> Result<Vec<FourCC>, NokhwaError> {
         self.device.compatible_fourcc()
     }
 
@@ -250,7 +241,7 @@ impl Camera {
 
     /// Gets the current camera's frame format (See: [`FrameFormat`], [`CameraFormat`]). This will force refresh to the current latest if it has changed.
     #[must_use]
-    pub fn frame_format(&self) -> FrameFormat {
+    pub fn frame_format(&self) -> FourCC {
         self.device.frame_format()
     }
 
@@ -260,7 +251,7 @@ impl Camera {
     /// This will also update the cache.
     /// # Errors
     /// If you started the stream and the camera rejects the new frame format, this will return an error.
-    pub fn set_frame_format(&mut self, fourcc: FrameFormat) -> Result<(), NokhwaError> {
+    pub fn set_frame_format(&mut self, fourcc: FourCC) -> Result<(), NokhwaError> {
         self.device.set_frame_format(fourcc)
     }
 
@@ -394,7 +385,9 @@ impl Camera {
     /// # Errors
     /// If the backend fails to get the frame (e.g. already taken, busy, doesn't exist anymore), or [`open_stream()`](CaptureBackendTrait::open_stream()) has not been called yet, this will error.
     pub fn write_frame_to_buffer(&mut self, buffer: &mut [u8]) -> Result<(), NokhwaError> {
-        self.device.frame()?.decode_image_to_buffer(buffer)
+        let frame = self.frame()?;
+        buffer.copy_from_slice(&frame.buffer_bytes());
+        Ok(())
     }
 
     #[cfg(feature = "output-wgpu")]

@@ -166,7 +166,7 @@ pub mod wmf {
         match guid {
             MF_VIDEO_FORMAT_NV12 => Some(FrameFormat::NV12),
             MF_VIDEO_FORMAT_RGB24 => Some(FrameFormat::RAWRGB),
-            MF_VIDEO_FORMAT_GRAY => Some(FrameFormat::GRAY),
+            MF_VIDEO_FORMAT_GRAY => Some(GRAY),
             MF_VIDEO_FORMAT_YUY2 => Some(FrameFormat::YUYV),
             MF_VIDEO_FORMAT_MJPEG => Some(FrameFormat::MJPEG),
             _ => None,
@@ -178,7 +178,7 @@ pub mod wmf {
             FrameFormat::MJPEG => MF_VIDEO_FORMAT_MJPEG,
             FrameFormat::YUYV => MF_VIDEO_FORMAT_YUY2,
             FrameFormat::NV12 => MF_VIDEO_FORMAT_NV12,
-            FrameFormat::GRAY => MF_VIDEO_FORMAT_GRAY,
+            GRAY => MF_VIDEO_FORMAT_GRAY,
             FrameFormat::RAWRGB => MF_VIDEO_FORMAT_RGB24,
         }
     }

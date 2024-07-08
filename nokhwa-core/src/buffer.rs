@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-use crate::types::{FrameFormat, Resolution};
+use crate::types::Resolution;
 use bytes::Bytes;
+use four_cc::FourCC;
 
 /// A buffer returned by a camera to accommodate custom decoding.
 /// Contains information of Resolution, the buffer's [`FrameFormat`], and the buffer.
@@ -25,14 +26,14 @@ use bytes::Bytes;
 pub struct Buffer {
     resolution: Resolution,
     buffer: Bytes,
-    source_frame_format: FrameFormat,
+    source_frame_format: FourCC,
 }
 
 impl Buffer {
     /// Creates a new buffer with a [`&[u8]`].
     #[must_use]
     #[inline]
-    pub fn new(res: Resolution, buf: &[u8], source_frame_format: FrameFormat) -> Self {
+    pub fn new(res: Resolution, buf: &[u8], source_frame_format: FourCC) -> Self {
         Self {
             resolution: res,
             buffer: Bytes::copy_from_slice(buf),
@@ -58,9 +59,9 @@ impl Buffer {
         self.buffer.clone()
     }
 
-    /// Get the [`FrameFormat`] of this buffer.
+    /// Get the [`FourCC`] of this buffer.
     #[must_use]
-    pub fn source_frame_format(&self) -> FrameFormat {
-        self.source_frame_format
+    pub fn source_frame_format(&self) -> FourCC {
+        self.source_frame_format.clone()
     }
 }
