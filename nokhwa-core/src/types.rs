@@ -661,16 +661,16 @@ impl Display for KnownCameraControlFlag {
 pub enum ControlValueDescription {
     None,
     Integer {
-        value: i64,
-        default: i64,
-        step: i64,
+        value: isize,
+        default: isize,
+        step: isize,
     },
     IntegerRange {
-        min: i64,
-        max: i64,
-        value: i64,
-        step: i64,
-        default: i64,
+        min: isize,
+        max: isize,
+        value: isize,
+        step: isize,
+        default: isize,
     },
     Float {
         value: f64,

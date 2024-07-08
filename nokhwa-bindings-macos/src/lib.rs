@@ -15,32 +15,27 @@
 */
 
 #![allow(clippy::not_unsafe_ptr_arg_deref)]
-
-#[cfg(any(target_os = "macos", target_os = "ios"))]
-#[macro_use]
-extern crate objc;
-
 use four_cc::FourCC;
-use core_media::AVCaptureExposureTargetBiasCurrent;
 
 #[cfg(any(target_os = "macos", target_os = "ios"))]
 mod internal {
-    use nokhwa_core::types::CameraInfo;
+    use std::ffi::CStr;
+
+    use core_media::{time::CMTime, OSType};
+    use four_cc::FourCC;
+    use nokhwa_core::types::{
+        CameraControl, CameraInfo, ControlValueDescription, KnownCameraControl,
+        KnownCameraControlFlag,
+    };
+    use objc2::{
+        msg_send,
+        runtime::{Object, NO, YES},
+    };
+    use objc2_foundation::{NSInteger, NSObject};
 
     #[allow(non_upper_case_globals)]
     fn raw_fcc_to_fourcc(raw: OSType) -> Option<FourCC> {
-        match raw {
-            kCMVideoCodecType_422YpCbCr8 | kCMPixelFormat_422YpCbCr8_yuvs => {
-                Some(FrameFormat::YUYV)
-            }
-            kCMVideoCodecType_JPEG | kCMVideoCodecType_JPEG_OpenDML => Some(FrameFormat::MJPEG),
-            kCMPixelFormat_8IndexedGray_WhiteIsZero => Some(GRAY),
-            kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange
-            | kCVPixelFormatType_420YpCbCr8BiPlanarFullRange
-            | 875704438 => Some(FrameFormat::NV12),
-            kCMPixelFormat_24RGB => Some(FrameFormat::RAWRGB),
-            _ => None,
-        }
+        FourCC::new(raw)
     }
 
     pub type CompressionData<'a> = (Cow<'a, [u8]>, FrameFormat);
@@ -82,7 +77,7 @@ mod internal {
                 let media_subtype = unsafe { CMFormatDescriptionGetMediaSubType(format) };
                 let media_subtype_fcc = FourCC::from(media_subtype);
                 println!("media_subtype_fcc: {:?}", media_subtype_fcc);
-                
+
                 let image_buffer: CVImageBufferRef =
                     unsafe { CMSampleBufferGetImageBuffer(didOutputSampleBuffer) };
                 unsafe {
@@ -223,27 +218,27 @@ mod internal {
     impl From<AVCaptureDeviceType> for *mut Object {
         fn from(device_type: AVCaptureDeviceType) -> Self {
             match device_type {
-                AVCaptureDeviceType::Dual => str_to_nsstr("AVCaptureDeviceTypeBuiltInDualCamera"),
+                AVCaptureDeviceType::Dual => NSString("AVCaptureDeviceTypeBuiltInDualCamera"),
                 AVCaptureDeviceType::DualWide => {
-                    str_to_nsstr("AVCaptureDeviceTypeBuiltInDualWideCamera")
+                    NSString("AVCaptureDeviceTypeBuiltInDualWideCamera")
                 }
                 AVCaptureDeviceType::Triple => {
-                    str_to_nsstr("AVCaptureDeviceTypeBuiltInTripleCamera")
+                    NSString("AVCaptureDeviceTypeBuiltInTripleCamera")
                 }
                 AVCaptureDeviceType::WideAngle => {
-                    str_to_nsstr("AVCaptureDeviceTypeBuiltInWideAngleCamera")
+                    NSString("AVCaptureDeviceTypeBuiltInWideAngleCamera")
                 }
                 AVCaptureDeviceType::UltraWide => {
-                    str_to_nsstr("AVCaptureDeviceTypeBuiltInUltraWideCamera")
+                    NSString("AVCaptureDeviceTypeBuiltInUltraWideCamera")
                 }
                 AVCaptureDeviceType::Telephoto => {
-                    str_to_nsstr("AVCaptureDeviceTypeBuiltInTelephotoCamera")
+                    NSString("AVCaptureDeviceTypeBuiltInTelephotoCamera")
                 }
                 AVCaptureDeviceType::TrueDepth => {
-                    str_to_nsstr("AVCaptureDeviceTypeBuiltInTrueDepthCamera")
+                    NSString("AVCaptureDeviceTypeBuiltInTrueDepthCamera")
                 }
                 AVCaptureDeviceType::ExternalUnknown => {
-                    str_to_nsstr("AVCaptureDeviceTypeExternalUnknown")
+                    NSString("AVCaptureDeviceTypeExternalUnknown")
                 }
             }
         }
@@ -540,7 +535,7 @@ mod internal {
         }
 
         pub fn from_id(id: &str, index_hint: Option<CameraIndex>) -> Result<Self, NokhwaError> {
-            let nsstr_id = str_to_nsstr(id);
+            let nsstr_id = NSString(id);
             let avfoundation_capture_cls = class!(AVCaptureDevice);
             let capture: *mut Object =
                 unsafe { msg_send![avfoundation_capture_cls, deviceWithUniqueID: nsstr_id] };
@@ -683,10 +678,10 @@ mod internal {
                 });
             }
 
-            let activefmtkey = str_to_nsstr("activeFormat");
-            let min_frame_duration = str_to_nsstr("minFrameDuration");
-            let active_video_min_frame_duration = str_to_nsstr("activeVideoMinFrameDuration");
-            let active_video_max_frame_duration = str_to_nsstr("activeVideoMaxFrameDuration");
+            let activefmtkey = NSString("activeFormat");
+            let min_frame_duration = NSString("minFrameDuration");
+            let active_video_min_frame_duration = NSString("activeVideoMinFrameDuration");
+            let active_video_max_frame_duration = NSString("activeVideoMaxFrameDuration");
             let _: () =
                 unsafe { msg_send![self.inner, setValue:selected_format forKey:activefmtkey] };
             let min_frame_duration: *mut Object =
@@ -896,7 +891,7 @@ mod internal {
                     max: exposure_bias_max as f64,
                     value: exposure_bias as f64,
                     step: f32::MIN_POSITIVE as f64,
-                    default: unsafe { AVCaptureExposureTargetBiasCurrent } as f64,
+                    default: 0 as f64,
                 },
                 vec![],
                 true,
