@@ -15,9 +15,9 @@
  */
 
 use crate::{
-    buffer::Buffer,
+    buffer::FrameBuffer,
     error::NokhwaError,
-    pixel_format::{MJPEG, NV12, RAWRGB, UYVY, YUYV, GRAY},
+    pixel_format::GRAY,
     types::{
         ApiBackend, CameraControl, CameraFormat, CameraInfo, ControlValueSetter,
         KnownCameraControl, Resolution,
@@ -160,7 +160,7 @@ pub trait CaptureBackendTrait {
     /// # Errors
     /// If the backend fails to get the frame (e.g. already taken, busy, doesn't exist anymore), the decoding fails (e.g. MJPEG -> u8), or [`open_stream()`](CaptureBackendTrait::open_stream()) has not been called yet,
     /// this will error.
-    fn frame(&mut self) -> Result<Buffer, NokhwaError>;
+    fn frame(&mut self) -> Result<FrameBuffer, NokhwaError>;
 
     /// Will get a frame from the camera **without** any processing applied, meaning you will usually get a frame you need to decode yourself.
     /// # Errors
@@ -194,9 +194,8 @@ pub trait CaptureBackendTrait {
         queue: &WgpuQueue,
         label: Option<&'a str>,
     ) -> Result<WgpuTexture, NokhwaError> {
-        use crate::pixel_format::RgbAFormat;
-        use std::num::NonZeroU32;
-        let frame = self.frame()?.decode_image::<RgbAFormat>()?;
+        let frame = self.frame()?;
+        let buffer = frame.buffer_bytes();
 
         let texture_size = Extent3d {
             width: frame.width(),
@@ -232,7 +231,7 @@ pub trait CaptureBackendTrait {
                 origin: wgpu::Origin3d::ZERO,
                 aspect: TextureAspect::All,
             },
-            &frame,
+            &buffer,
             ImageDataLayout {
                 offset: 0,
                 bytes_per_row: width_nonzero,

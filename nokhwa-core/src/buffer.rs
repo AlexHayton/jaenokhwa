@@ -23,13 +23,13 @@ use four_cc::FourCC;
 ///
 /// Note that decoding on the main thread **will** decrease your performance and lead to dropped frames.
 #[derive(Clone, Debug, Hash, PartialOrd, PartialEq, Eq)]
-pub struct Buffer {
+pub struct FrameBuffer {
     resolution: Resolution,
     buffer: Bytes,
     source_frame_format: FourCC,
 }
 
-impl Buffer {
+impl FrameBuffer {
     /// Creates a new buffer with a [`&[u8]`].
     #[must_use]
     #[inline]
@@ -45,6 +45,18 @@ impl Buffer {
     #[must_use]
     pub fn resolution(&self) -> Resolution {
         self.resolution
+    }
+
+    #[must_use]
+    /// Get the width of this buffer.
+    pub fn width(&self) -> u32 {
+        self.resolution.width()
+    }
+
+    #[must_use]
+    /// Get the height of this buffer.
+    pub fn height(&self) -> u32 {
+        self.resolution.height()
     }
 
     /// Get the data of this buffer.

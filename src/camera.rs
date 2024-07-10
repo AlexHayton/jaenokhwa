@@ -15,9 +15,8 @@
  */
 
 use four_cc::FourCC;
-use nokhwa_core::types::RequestedFormatType;
 use nokhwa_core::{
-    buffer::Buffer,
+    buffer::FrameBuffer,
     error::NokhwaError,
     traits::CaptureBackendTrait,
     types::{
@@ -74,7 +73,11 @@ impl Camera {
         backend: ApiBackend,
     ) -> Result<Self, NokhwaError> {
         let camera_format = CameraFormat::new_from(width, height, fourcc, fps);
-        Camera::with_backend(index, camera_format, backend)
+        Camera::with_backend(
+            index,
+            RequestedFormat::from_camera_format(camera_format),
+            backend,
+        )
     }
 
     /// Allows creation of a [`Camera`] with a custom backend. This is useful if you are creating e.g. a custom module.
@@ -125,7 +128,11 @@ impl Camera {
             self.device.stop_stream()?;
         }
         let new_camera_format = self.device.camera_format();
-        let new_camera = init_camera(&self.idx, new_camera_format.format(), new_backend)?;
+        let new_camera = init_camera(
+            &self.idx,
+            RequestedFormat::from_camera_format(new_camera_format),
+            new_backend,
+        )?;
         self.device = new_camera;
         Ok(())
     }
@@ -367,7 +374,7 @@ impl Camera {
     /// # Errors
     /// If the backend fails to get the frame (e.g. already taken, busy, doesn't exist anymore), the decoding fails (e.g. MJPEG -> u8), or [`open_stream()`](CaptureBackendTrait::open_stream()) has not been called yet,
     /// this will error.
-    pub fn frame(&mut self) -> Result<Buffer, NokhwaError> {
+    pub fn frame(&mut self) -> Result<FrameBuffer, NokhwaError> {
         self.device.frame()
     }
 

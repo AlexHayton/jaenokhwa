@@ -706,9 +706,9 @@ pub enum ControlValueDescription {
         default: (f64, f64),
     },
     Enum {
-        value: i64,
-        possible: Vec<i64>,
-        default: i64,
+        value: isize,
+        possible: Vec<isize>,
+        default: isize,
     },
     RGB {
         value: (f64, f64, f64),
@@ -1117,14 +1117,14 @@ impl Display for CameraControl {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum ControlValueSetter {
     None,
-    Integer(i64),
+    Integer(isize),
     Float(f64),
     Boolean(bool),
     String(String),
     Bytes(Vec<u8>),
     KeyValue(i128, i128),
     Point(f64, f64),
-    EnumValue(i64),
+    EnumValue(isize),
     RGB(f64, f64, f64),
 }
 
@@ -1139,7 +1139,7 @@ impl ControlValueSetter {
     }
     #[must_use]
 
-    pub fn as_integer(&self) -> Option<&i64> {
+    pub fn as_integer(&self) -> Option<&isize> {
         if let ControlValueSetter::Integer(i) = self {
             Some(i)
         } else {
@@ -1202,7 +1202,7 @@ impl ControlValueSetter {
     }
     #[must_use]
 
-    pub fn as_enum(&self) -> Option<&i64> {
+    pub fn as_enum(&self) -> Option<&isize> {
         if let ControlValueSetter::EnumValue(e) = self {
             Some(e)
         } else {

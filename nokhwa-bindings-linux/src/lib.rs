@@ -13,16 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #[cfg(target_os = "linux")]
 mod internal {
     use nokhwa_core::{
-        buffer::Buffer,
+        FrameBuffer::{FrameBuffer, FrameBuffer},
         error::NokhwaError,
         traits::CaptureBackendTrait,
         types::{
             ApiBackend, CameraControl, CameraFormat, CameraIndex, CameraInfo,
-            ControlValueDescription, ControlValueSetter, FrameFormat, KnownCameraControl,
+            ControlValueDescription, ControlValueSetter, FourCC, KnownCameraControl,
             KnownCameraControlFlag, RequestedFormat, RequestedFormatType, Resolution,
         },
     };
@@ -159,13 +158,13 @@ mod internal {
                     Ok(frame_format_vec)
                 }
                 Err(why) => Err(NokhwaError::GetPropertyError {
-                    property: "FrameFormat".to_string(),
+                    property: "FourCC".to_string(),
                     error: why.to_string(),
                 }),
             }?;
 
             for ff in frame_formats {
-                let framefmt = match fourcc_to_frameformat(ff) {
+                let framefmt = match fourcc_to_FourCC(ff) {
                     Some(s) => s,
                     None => continue,
                 };
@@ -238,10 +237,10 @@ mod internal {
             if let Err(why) = device.set_format(&Format::new(
                 format.width(),
                 format.height(),
-                frameformat_to_fourcc(format.format()),
+                FourCC_to_fourcc(format.format()),
             )) {
                 return Err(NokhwaError::SetPropertyError {
-                    property: "Resolution, FrameFormat".to_string(),
+                    property: "Resolution, FourCC".to_string(),
                     value: format.to_string(),
                     error: why.to_string(),
                 });
@@ -295,7 +294,7 @@ mod internal {
             width: u32,
             height: u32,
             fps: u32,
-            fourcc: FrameFormat,
+            fourcc: FourCC,
         ) -> Result<Self, NokhwaError> {
             let camera_format = CameraFormat::new_from(width, height, fourcc, fps);
             V4LCaptureDevice::new(
@@ -307,8 +306,8 @@ mod internal {
             )
         }
 
-        fn get_resolution_list(&self, fourcc: FrameFormat) -> Result<Vec<Resolution>, NokhwaError> {
-            let format = frameformat_to_fourcc(fourcc);
+        fn get_resolution_list(&self, fourcc: FourCC) -> Result<Vec<Resolution>, NokhwaError> {
+            let format = FourCC_to_fourcc(fourcc);
 
             // match Capture::enum_framesizes(&self.device, format) {
             match self.device.enum_framesizes(format) {
@@ -341,9 +340,9 @@ mod internal {
         pub fn force_refresh_camera_format(&mut self) -> Result<(), NokhwaError> {
             match self.device.format() {
                 Ok(format) => {
-                    let frame_format = fourcc_to_frameformat(format.fourcc).ok_or(
+                    let frame_format = fourcc_to_FourCC(format.fourcc).ok_or(
                         NokhwaError::GetPropertyError {
-                            property: "FrameFormat".to_string(),
+                            property: "FourCC".to_string(),
                             error: "unsupported".to_string(),
                         },
                     )?;
@@ -413,7 +412,7 @@ mod internal {
                 Ok(fmt) => fmt,
                 Err(why) => {
                     return Err(NokhwaError::GetPropertyError {
-                        property: "Resolution, FrameFormat".to_string(),
+                        property: "Resolution, FourCC".to_string(),
                         error: why.to_string(),
                     })
                 }
@@ -429,11 +428,11 @@ mod internal {
             };
 
             let v4l_fcc = match new_fmt.format() {
-                FrameFormat::MJPEG => FourCC::new(b"MJPG"),
-                FrameFormat::YUYV => FourCC::new(b"YUYV"),
+                FourCC::MJPEG => FourCC::new(b"MJPG"),
+                FourCC::YUYV => FourCC::new(b"YUYV"),
                 GRAY => FourCC::new(b"GRAY"),
-                FrameFormat::RAWRGB => FourCC::new(b"RGB3"),
-                FrameFormat::NV12 => FourCC::new(b"NV12"),
+                FourCC::RAWRGB => FourCC::new(b"RGB3"),
+                FourCC::NV12 => FourCC::new(b"NV12"),
             };
 
             let format = Format::new(new_fmt.width(), new_fmt.height(), v4l_fcc);
@@ -441,7 +440,7 @@ mod internal {
 
             if let Err(why) = Capture::set_format(&self.device, &format) {
                 return Err(NokhwaError::SetPropertyError {
-                    property: "Resolution, FrameFormat".to_string(),
+                    property: "Resolution, FourCC".to_string(),
                     value: format.to_string(),
                     error: why.to_string(),
                 });
@@ -461,7 +460,7 @@ mod internal {
                         // undo
                         if let Err(why) = Capture::set_format(&self.device, &prev_format) {
                             return Err(NokhwaError::SetPropertyError {
-                                property: format!("Attempt undo due to stream acquisition failure with error {}. Resolution, FrameFormat", why),
+                                property: format!("Attempt undo due to stream acquisition failure with error {}. Resolution, FourCC", why),
                                 value: prev_format.to_string(),
                                 error: why.to_string(),
                             });
@@ -494,10 +493,10 @@ mod internal {
 
         fn compatible_list_by_resolution(
             &mut self,
-            fourcc: FrameFormat,
+            fourcc: FourCC,
         ) -> Result<HashMap<Resolution, Vec<u32>>, NokhwaError> {
             let resolutions = self.get_resolution_list(fourcc)?;
-            let format = frameformat_to_fourcc(fourcc);
+            let format = FourCC_to_fourcc(fourcc);
             let mut res_map = HashMap::new();
             for res in resolutions {
                 let mut compatible_fps = vec![];
@@ -535,12 +534,12 @@ mod internal {
             Ok(res_map)
         }
 
-        fn compatible_fourcc(&mut self) -> Result<Vec<FrameFormat>, NokhwaError> {
+        fn compatible_fourcc(&mut self) -> Result<Vec<FourCC>, NokhwaError> {
             match self.device.enum_formats() {
                 Ok(formats) => {
                     let mut frame_format_vec = vec![];
                     for format in formats {
-                        match fourcc_to_frameformat(format.fourcc) {
+                        match fourcc_to_FourCC(format.fourcc) {
                             Some(ff) => frame_format_vec.push(ff),
                             None => continue,
                         }
@@ -550,7 +549,7 @@ mod internal {
                     Ok(frame_format_vec)
                 }
                 Err(why) => Err(NokhwaError::GetPropertyError {
-                    property: "FrameFormat".to_string(),
+                    property: "FourCC".to_string(),
                     error: why.to_string(),
                 }),
             }
@@ -576,11 +575,11 @@ mod internal {
             self.set_camera_format(new_fmt)
         }
 
-        fn frame_format(&self) -> FrameFormat {
+        fn frame_format(&self) -> FourCC {
             self.camera_format.format()
         }
 
-        fn set_frame_format(&mut self, fourcc: FrameFormat) -> Result<(), NokhwaError> {
+        fn set_frame_format(&mut self, fourcc: FourCC) -> Result<(), NokhwaError> {
             let mut new_fmt = self.camera_format;
             new_fmt.set_format(fourcc);
             self.set_camera_format(new_fmt)
@@ -742,7 +741,7 @@ mod internal {
         }
 
         fn open_stream(&mut self) -> Result<(), NokhwaError> {
-            let stream = match MmapStream::new(&self.device, v4l::buffer::Type::VideoCapture) {
+            let stream = match MmapStream::new(&self.device, v4l::FrameBuffer::Type::VideoCapture) {
                 Ok(s) => s,
                 Err(why) => return Err(NokhwaError::OpenStreamError(why.to_string())),
             };
@@ -754,10 +753,10 @@ mod internal {
             self.stream_handle.is_some()
         }
 
-        fn frame(&mut self) -> Result<Buffer, NokhwaError> {
+        fn frame(&mut self) -> Result<FrameBuffer, NokhwaError> {
             let cam_fmt = self.camera_format;
             let raw_frame = self.frame_raw()?;
-            Ok(Buffer::new(
+            Ok(FrameBuffer::new(
                 cam_fmt.resolution(),
                 &raw_frame,
                 cam_fmt.format(),
@@ -784,36 +783,37 @@ mod internal {
         }
     }
 
-    fn fourcc_to_frameformat(fourcc: FourCC) -> Option<FrameFormat> {
+    fn fourcc_to_FourCC(fourcc: FourCC) -> Option<FourCC> {
         match fourcc.str().ok()? {
-            "YUYV" => Some(FrameFormat::YUYV),
-            "MJPG" => Some(FrameFormat::MJPEG),
+            "YUYV" => Some(FourCC::YUYV),
+            "MJPG" => Some(FourCC::MJPEG),
             "GRAY" => Some(GRAY),
-            "RGB3" => Some(FrameFormat::RAWRGB),
-            "NV12" => Some(FrameFormat::NV12),
+            "RGB3" => Some(FourCC::RAWRGB),
+            "NV12" => Some(FourCC::NV12),
             _ => None,
         }
     }
 
-    fn frameformat_to_fourcc(fourcc: FrameFormat) -> FourCC {
+    fn FourCC_to_fourcc(fourcc: FourCC) -> FourCC {
         match fourcc {
-            FrameFormat::MJPEG => FourCC::new(b"MJPG"),
-            FrameFormat::YUYV => FourCC::new(b"YUYV"),
+            FourCC::MJPEG => FourCC::new(b"MJPG"),
+            FourCC::YUYV => FourCC::new(b"YUYV"),
             GRAY => FourCC::new(b"GRAY"),
-            FrameFormat::RAWRGB => FourCC::new(b"RGB3"),
-            FrameFormat::NV12 => FourCC::new(b"NV12"),
+            FourCC::RAWRGB => FourCC::new(b"RGB3"),
+            FourCC::NV12 => FourCC::new(b"NV12"),
         }
     }
 }
 
 #[cfg(not(target_os = "linux"))]
 mod internal {
-    use nokhwa_core::buffer::Buffer;
+    use four_cc::FourCC;
+    use nokhwa_core::buffer::FrameBuffer;
     use nokhwa_core::error::NokhwaError;
     use nokhwa_core::traits::CaptureBackendTrait;
     use nokhwa_core::types::{
         ApiBackend, CameraControl, CameraFormat, CameraIndex, CameraInfo, ControlValueSetter,
-        FrameFormat, KnownCameraControl, RequestedFormat, Resolution,
+        KnownCameraControl, RequestedFormat, Resolution,
     };
     use std::borrow::Cow;
     use std::collections::HashMap;
@@ -862,7 +862,7 @@ mod internal {
             width: u32,
             height: u32,
             fps: u32,
-            fourcc: FrameFormat,
+            fourcc: FourCC,
         ) -> Result<Self, NokhwaError> {
             Err(NokhwaError::NotImplementedError(
                 "V4L2 only on Linux".to_string(),
@@ -903,12 +903,12 @@ mod internal {
 
         fn compatible_list_by_resolution(
             &mut self,
-            fourcc: FrameFormat,
+            fourcc: FourCC,
         ) -> Result<HashMap<Resolution, Vec<u32>>, NokhwaError> {
             todo!()
         }
 
-        fn compatible_fourcc(&mut self) -> Result<Vec<FrameFormat>, NokhwaError> {
+        fn compatible_fourcc(&mut self) -> Result<Vec<FourCC>, NokhwaError> {
             todo!()
         }
 
@@ -928,11 +928,11 @@ mod internal {
             todo!()
         }
 
-        fn frame_format(&self) -> FrameFormat {
+        fn frame_format(&self) -> FourCC {
             todo!()
         }
 
-        fn set_frame_format(&mut self, fourcc: FrameFormat) -> Result<(), NokhwaError> {
+        fn set_frame_format(&mut self, fourcc: FourCC) -> Result<(), NokhwaError> {
             todo!()
         }
 
@@ -963,7 +963,7 @@ mod internal {
             todo!()
         }
 
-        fn frame(&mut self) -> Result<Buffer, NokhwaError> {
+        fn frame(&mut self) -> Result<FrameBuffer, NokhwaError> {
             todo!()
         }
 
