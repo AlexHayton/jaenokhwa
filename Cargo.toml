@@ -45,6 +45,7 @@ ffimage_yuv = "0.10.0"
 
 [patch.crates-io]
 four-cc = { git = "https://github.com/AlexHayton/four-cc.git" }
+av-foundation = { git = "https://github.com/AlexHayton/av-foundation-rs.git", branch = "discovery-session" }
 
 [dependencies.nokhwa-core]
 version = "0.1.0"
