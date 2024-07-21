@@ -33,7 +33,6 @@
 /// Raw access to each of Nokhwa's backends.
 pub mod backends;
 mod camera;
-mod init;
 /// A camera that uses native browser APIs meant for WASM applications.
 #[cfg(feature = "input-jscam")]
 #[cfg_attr(feature = "docs-features", doc(cfg(feature = "input-jscam")))]
@@ -46,7 +45,6 @@ mod query;
 pub mod threaded;
 
 pub use camera::Camera;
-pub use init::*;
 pub use nokhwa_core::buffer::FrameBuffer;
 pub use nokhwa_core::error::NokhwaError;
 pub use query::*;

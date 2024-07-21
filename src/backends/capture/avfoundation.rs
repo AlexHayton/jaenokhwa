@@ -21,7 +21,6 @@ use nokhwa_bindings_macos::{
     AVCaptureVideoDataOutput,
 };
 use nokhwa_core::{
-    buffer::Buffer,
     error::NokhwaError,
     pixel_format::RgbFormat,
     traits::CaptureBackendTrait,

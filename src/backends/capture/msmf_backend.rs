@@ -13,16 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+use four_cc::FourCC;
 use nokhwa_bindings_windows::wmf::MediaFoundationDevice;
 use nokhwa_core::{
-    buffer::Buffer,
+    buffer::FrameBuffer,
     error::NokhwaError,
-    pixel_format::RgbFormat,
     traits::CaptureBackendTrait,
     types::{
         all_known_camera_controls, ApiBackend, CameraControl, CameraFormat, CameraIndex,
-        CameraInfo, ControlValueSetter, FrameFormat, KnownCameraControl, RequestedFormat,
-        RequestedFormatType, Resolution,
+        CameraInfo, ControlValueSetter, KnownCameraControl, RequestedFormat, RequestedFormatType,
+        Resolution,
     },
 };
 use std::{borrow::Cow, collections::HashMap};
@@ -66,6 +66,7 @@ impl MediaFoundationCaptureDevice {
                 error: "Failed to fulfill requested format".to_string(),
             })?;
 
+        println!("Desired format: {:?}", desired);
         mf_device.set_format(desired)?;
 
         let mut new_cam = MediaFoundationCaptureDevice {
@@ -85,9 +86,9 @@ impl MediaFoundationCaptureDevice {
         width: u32,
         height: u32,
         fps: u32,
-        fourcc: FrameFormat,
+        fourcc: FourCC,
     ) -> Result<Self, NokhwaError> {
-        let camera_format = RequestedFormat::new::<RgbFormat>(RequestedFormatType::Exact(
+        let camera_format = RequestedFormat::new(RequestedFormatType::Closest(
             CameraFormat::new_from(width, height, fourcc, fps),
         ));
         MediaFoundationCaptureDevice::new(index, camera_format)
@@ -132,7 +133,7 @@ impl CaptureBackendTrait for MediaFoundationCaptureDevice {
 
     fn compatible_list_by_resolution(
         &mut self,
-        fourcc: FrameFormat,
+        fourcc: FourCC,
     ) -> Result<HashMap<Resolution, Vec<u32>>, NokhwaError> {
         let mf_camera_format_list = self.inner.compatible_format_list()?;
         let mut resolution_map: HashMap<Resolution, Vec<u32>> = HashMap::new();
@@ -160,7 +161,7 @@ impl CaptureBackendTrait for MediaFoundationCaptureDevice {
         Ok(resolution_map)
     }
 
-    fn compatible_fourcc(&mut self) -> Result<Vec<FrameFormat>, NokhwaError> {
+    fn compatible_fourcc(&mut self) -> Result<Vec<FourCC>, NokhwaError> {
         let mf_camera_format_list = self.inner.compatible_format_list()?;
         let mut frame_format_list = vec![];
 
@@ -197,11 +198,11 @@ impl CaptureBackendTrait for MediaFoundationCaptureDevice {
         self.set_camera_format(new_format)
     }
 
-    fn frame_format(&self) -> FrameFormat {
+    fn frame_format(&self) -> FourCC {
         self.camera_format().format()
     }
 
-    fn set_frame_format(&mut self, fourcc: FrameFormat) -> Result<(), NokhwaError> {
+    fn set_frame_format(&mut self, fourcc: FourCC) -> Result<(), NokhwaError> {
         let mut new_format = self.camera_format();
         new_format.set_format(fourcc);
         self.set_camera_format(new_format)
@@ -241,10 +242,10 @@ impl CaptureBackendTrait for MediaFoundationCaptureDevice {
         self.inner.is_stream_open()
     }
 
-    fn frame(&mut self) -> Result<Buffer, NokhwaError> {
+    fn frame(&mut self) -> Result<FrameBuffer, NokhwaError> {
         self.refresh_camera_format()?;
         let self_ctrl = self.camera_format();
-        Ok(Buffer::new(
+        Ok(FrameBuffer::new(
             self_ctrl.resolution(),
             &self.inner.raw_bytes()?,
             self_ctrl.format(),

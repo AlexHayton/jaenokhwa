@@ -40,12 +40,10 @@ test-fail-warning = []
 thiserror = "1.0"
 paste = "1.0"
 four-cc = "0.4.0"
-ffimage = "0.10.0"
-ffimage_yuv = "0.10.0"
 
 [patch.crates-io]
 four-cc = { git = "https://github.com/AlexHayton/four-cc.git" }
-av-foundation = { git = "https://github.com/AlexHayton/av-foundation-rs.git", branch = "discovery-session" }
+av-foundation = { git = "https://github.com/AlexHayton/av-foundation-rs.git" }
 
 [dependencies.nokhwa-core]
 version = "0.1.0"
