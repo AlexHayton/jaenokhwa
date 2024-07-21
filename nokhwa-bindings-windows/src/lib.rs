@@ -575,7 +575,8 @@ pub mod wmf {
                         })
                     }
                 };
-                let fourcc = FourCC::from(guid.data1);
+                let fourcc = guid_to_fourcc(guid);
+                println!("FourCC: {:?}", fourcc);
 
                 let (width, height) = match unsafe { media_type.GetUINT64(&MF_MT_FRAME_SIZE) } {
                     Ok(res_u64) => {

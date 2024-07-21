@@ -66,6 +66,7 @@ impl MediaFoundationCaptureDevice {
                 error: "Failed to fulfill requested format".to_string(),
             })?;
 
+        println!("Desired format: {:?}", desired);
         mf_device.set_format(desired)?;
 
         let mut new_cam = MediaFoundationCaptureDevice {
