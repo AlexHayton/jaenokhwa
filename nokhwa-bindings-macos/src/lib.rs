@@ -50,7 +50,8 @@ mod internal {
             CMVideoFormatDescriptionGetDimensions,
         },
         sample_buffer::{
-            CMSampleBufferGetFormatDescription, CMSampleBufferGetImageBuffer, CMSampleBuffer, CMSampleBufferRef,
+            CMSampleBuffer, CMSampleBufferGetFormatDescription, CMSampleBufferGetImageBuffer,
+            CMSampleBufferRef,
         },
         time::CMTime,
         OSType,
@@ -58,8 +59,8 @@ mod internal {
     use core_video::{
         image_buffer::CVImageBufferRef,
         pixel_buffer::{
-            CVPixelBufferGetBaseAddress, CVPixelBufferGetDataSize, CVPixelBufferLockBaseAddress,
-            CVPixelBufferUnlockBaseAddress, CVPixelBuffer,
+            CVPixelBuffer, CVPixelBufferGetBaseAddress, CVPixelBufferGetDataSize,
+            CVPixelBufferLockBaseAddress, CVPixelBufferUnlockBaseAddress,
         },
     };
     use dispatch::{Queue, QueueAttribute};
@@ -77,13 +78,12 @@ mod internal {
     use objc2::{
         class,
         declare::ClassDecl,
-        DeclaredClass,
         declare_class, extern_methods,
         ffi::{Nil, BOOL, NO, YES},
         msg_send, msg_send_id, mutability,
         rc::{Allocated, Id},
         runtime::{AnyObject, Class, Protocol, Sel},
-        sel, ClassType,
+        sel, ClassType, DeclaredClass,
     };
     use objc2_foundation::{
         ns_string, CGFloat, CGPoint, NSArray, NSInteger, NSObject, NSObjectProtocol, NSString,
@@ -202,47 +202,51 @@ mod internal {
 
     pub fn query_avfoundation() -> Result<Vec<CameraInfo>, NokhwaError> {
         #[cfg(any(target_os = "macos"))]
-        let device_types: Vec<&AVCaptureDeviceType> = vec![
-            AVCaptureDeviceTypeBuiltInWideAngleCamera,
-            AVCaptureDeviceTypeContinuityCamera,
-            AVCaptureDeviceTypeDeskViewCamera,
-            AVCaptureDeviceTypeExternalUnknown,
-        ];
+        let device_types: Vec<&AVCaptureDeviceType> = unsafe {
+            vec![
+                AVCaptureDeviceTypeBuiltInWideAngleCamera,
+                AVCaptureDeviceTypeContinuityCamera,
+                AVCaptureDeviceTypeDeskViewCamera,
+                AVCaptureDeviceTypeExternalUnknown,
+            ]
+        };
 
         #[cfg(any(target_os = "ios"))]
-        let device_types: Vec<&AVCaptureDeviceType> = vec![
-            AVCaptureDeviceTypeBuiltInUltraWideCamera,
-            AVCaptureDeviceTypeBuiltInWideAngleCamera,
-            AVCaptureDeviceTypeBuiltInTelephotoCamera,
-            AVCaptureDeviceTypeBuiltInDualCamera,
-            AVCaptureDeviceTypeBuiltInTrueDepthCamera,
-            AVCaptureDeviceTypeExternalUnknown,
-        ];
-        let device_types_nsarray = NSArray::new();
+        let device_types: Vec<&AVCaptureDeviceType> = unsafe {
+            vec![
+                AVCaptureDeviceTypeBuiltInUltraWideCamera,
+                AVCaptureDeviceTypeBuiltInWideAngleCamera,
+                AVCaptureDeviceTypeBuiltInTelephotoCamera,
+                AVCaptureDeviceTypeBuiltInDualCamera,
+                AVCaptureDeviceTypeBuiltInTrueDepthCamera,
+                AVCaptureDeviceTypeExternalUnknown,
+            ]
+        };
+        let mut device_types_nsarray = NSArray::new();
         device_types.iter().for_each(|device_type| unsafe {
             device_types_nsarray = device_types_nsarray.arrayByAddingObject(*device_type);
         });
-        let discovery_session =
+        let discovery_session = unsafe {
             AVCaptureDeviceDiscoverySession::discovery_session_with_device_types(
                 &device_types_nsarray,
                 AVMediaTypeVideo.clone(),
                 AVCaptureDevicePositionUnspecified,
-            );
-        let devices = discovery_session.devices();
-        let cameras = devices.into_iter().map(|device| {
-            CameraInfo(
-                device.localized_name().to_string(),
-                device.unique_id().to_string(),
-                device.manufacturer().to_string(),
-                format!(
-                    "{}: {} - {}, {:?}",
-                    device.manufacturer(),
-                    device.model_id(),
-                    device.device_type(),
-                    device.position()
-                ),
             )
-        }).collect();
+        };
+        let devices = discovery_session.devices();
+        let cameras = devices
+            .into_iter()
+            .map(|device| {
+                CameraInfo::new(
+                    &device.unique_id().to_string(),
+                    &device.localized_name().to_string(),
+                    &device.manufacturer().to_string(),
+                    &device.model_id().to_string(),
+                    &device.device_type().to_string(),
+                    &device.position().to_string(),
+                )
+            })
+            .collect();
         Ok(cameras)
     }
 
@@ -288,19 +292,24 @@ mod internal {
             }
         }
 
-        pub fn from_id(id: &str, index_hint: Option<CameraIndex>) -> Result<Self, NokhwaError> {
-            let nsstr_id = NSString::from_str(&id.to_string()).as_ref();
+        pub fn from_unique_id(
+            unique_id: &str,
+            index_hint: Option<CameraIndex>,
+        ) -> Result<Self, NokhwaError> {
+            let nsstr_id = NSString::from_str(&unique_id.to_string()).as_ref();
+            let device =
+                av_foundation::capture_device::AVCaptureDevice::device_with_unique_id(nsstr_id);
             let avfoundation_capture_cls = class!(AVCaptureDevice);
             let capture: *mut AVCaptureDevice =
                 unsafe { msg_send![avfoundation_capture_cls, deviceWithUniqueID: nsstr_id] };
             if capture.is_null() {
                 return Err(NokhwaError::OpenDeviceError(
-                    id.to_string(),
+                    unique_id.to_string(),
                     "Device is null".to_string(),
                 ));
             }
             let camera_info = get_raw_device_info(
-                index_hint.unwrap_or_else(|| CameraIndex::String(id.to_string())),
+                index_hint.unwrap_or_else(|| CameraIndex::String(unique_id.to_string())),
                 capture,
             );
 
@@ -317,7 +326,7 @@ mod internal {
 
         pub fn supported_formats_raw(&self) -> Result<Vec<&AVCaptureDeviceFormat>, NokhwaError> {
             unsafe {
-                let raw_formats = self.inner.formats().to_vec().clone();
+                let raw_formats = Vec::from(self.inner.formats());
                 return Ok(raw_formats);
             }
         }

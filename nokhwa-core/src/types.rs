@@ -3,7 +3,6 @@ use four_cc::FourCC;
 #[cfg(feature = "serialize")]
 use serde::{Deserialize, Serialize};
 use std::{
-    borrow::Borrow,
     cmp::Ordering,
     fmt::{Display, Formatter},
 };
@@ -446,10 +445,12 @@ impl Display for CameraFormat {
 #[cfg_attr(feature = "output-wasm", wasm_bindgen)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct CameraInfo {
-    human_name: String,
-    description: String,
-    misc: String,
-    index: CameraIndex,
+    unique_id: String,
+    name: String,
+    manufacturer: Option<String>,
+    model: Option<String>,
+    device_type: Option<String>,
+    position: Option<String>,
 }
 
 #[cfg_attr(feature = "output-wasm", wasm_bindgen(js_class = CameraInfo))]
@@ -459,15 +460,21 @@ impl CameraInfo {
     /// This is exported as a constructor for [`CameraInfo`].
     #[must_use]
     #[cfg_attr(feature = "output-wasm", wasm_bindgen(constructor))]
-    // OK, i just checkeed back on this code. WTF was I on when I wrote `&(impl AsRef<str> + ?Sized)` ????
-    // I need to get on the same shit that my previous self was on, because holy shit that stuff is strong as FUCK!
-    // Finally fixed this insanity. Hopefully I didnt torment anyone by actually putting this in a stable release.
-    pub fn new(human_name: &str, description: &str, misc: &str, index: CameraIndex) -> Self {
+    pub fn new(
+        unique_id: &str,
+        name: &str,
+        manufacturer: &str,
+        model: &str,
+        device_type: &str,
+        position: &str,
+    ) -> Self {
         CameraInfo {
-            human_name: human_name.to_string(),
-            description: description.to_string(),
-            misc: misc.to_string(),
-            index,
+            unique_id: unique_id.to_string(),
+            name: name.to_string(),
+            manufacturer: Some(manufacturer.to_string()),
+            model: Some(model.to_string()),
+            device_type: Some(device_type.to_string()),
+            position: Some(position.to_string()),
         }
     }
 
@@ -479,100 +486,18 @@ impl CameraInfo {
     feature = "output-wasm",
     wasm_bindgen(getter = HumanReadableName)
     )]
-    // yes, i know, unnecessary alloc this, unnecessary alloc that
-    // but wasm bindgen
-    pub fn human_name(&self) -> String {
-        self.human_name.clone()
-    }
 
-    /// Set the device info's human name.
-    /// # JS-WASM
-    /// This is exported as a `set_HumanReadableName`.
-    #[cfg_attr(
-    feature = "output-wasm",
-    wasm_bindgen(setter = HumanReadableName)
-    )]
-    pub fn set_human_name(&mut self, human_name: &str) {
-        self.human_name = human_name.to_string();
+    pub fn name(&self) -> String {
+        self.name.clone()
     }
-
-    /// Get a reference to the device info's description.
-    /// # JS-WASM
-    /// This is exported as a `get_Description`.
-    #[must_use]
-    #[cfg_attr(feature = "output-wasm", wasm_bindgen(getter = Description))]
-    pub fn description(&self) -> &str {
-        self.description.borrow()
-    }
-
-    /// Set the device info's description.
-    /// # JS-WASM
-    /// This is exported as a `set_Description`.
-    #[cfg_attr(feature = "output-wasm", wasm_bindgen(setter = Description))]
-    pub fn set_description(&mut self, description: &str) {
-        self.description = description.to_string();
-    }
-
-    /// Get a reference to the device info's misc.
-    /// # JS-WASM
-    /// This is exported as a `get_MiscString`.
-    #[must_use]
-    #[cfg_attr(feature = "output-wasm", wasm_bindgen(getter = MiscString))]
-    pub fn misc(&self) -> String {
-        self.misc.clone()
-    }
-
-    /// Set the device info's misc.
-    /// # JS-WASM
-    /// This is exported as a `set_MiscString`.
-    #[cfg_attr(feature = "output-wasm", wasm_bindgen(setter = MiscString))]
-    pub fn set_misc(&mut self, misc: &str) {
-        self.misc = misc.to_string();
-    }
-
-    /// Get a reference to the device info's index.
-    /// # JS-WASM
-    /// This is exported as a `get_Index`.
-    #[must_use]
-    #[cfg_attr(feature = "output-wasm", wasm_bindgen(getter = Index))]
-    pub fn index(&self) -> &CameraIndex {
-        &self.index
-    }
-
-    /// Set the device info's index.
-    /// # JS-WASM
-    /// This is exported as a `set_Index`.
-    #[cfg_attr(feature = "output-wasm", wasm_bindgen(setter = Index))]
-    pub fn set_index(&mut self, index: CameraIndex) {
-        self.index = index;
-    }
-
-    // /// Gets the device info's index as an `u32`.
-    // /// # Errors
-    // /// If the index is not parsable as a `u32`, this will error.
-    // /// # JS-WASM
-    // /// This is exported as `get_Index_Int`
-    // #[cfg_attr(feature = "output-wasm", wasm_bindgen(getter = Index_Int))]
-    // pub fn index_num(&self) -> Result<u32, NokhwaError> {
-    //     match &self.index {
-    //         CameraIndex::Index(i) => Ok(*i),
-    //         CameraIndex::String(s) => match s.parse::<u32>() {
-    //             Ok(p) => Ok(p),
-    //             Err(why) => Err(NokhwaError::GetPropertyError {
-    //                 property: "index-int".to_string(),
-    //                 error: why.to_string(),
-    //             }),
-    //         },
-    //     }
-    // }
 }
 
 impl Display for CameraInfo {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Name: {}, Description: {}, Extra: {}, Index: {}",
-            self.human_name, self.description, self.misc, self.index
+            "Name: {} ({}) Manufacturer: {:?}, Model: {:?}, {:?}",
+            self.name, self.unique_id, self.manufacturer, self.model, self.position
         )
     }
 }
