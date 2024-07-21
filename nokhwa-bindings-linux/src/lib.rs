@@ -16,14 +16,15 @@
 #[cfg(target_os = "linux")]
 mod internal {
     use nokhwa_core::{
-        FrameBuffer::{FrameBuffer, FrameBuffer},
         error::NokhwaError,
+        pixel_format,
         traits::CaptureBackendTrait,
         types::{
             ApiBackend, CameraControl, CameraFormat, CameraIndex, CameraInfo,
             ControlValueDescription, ControlValueSetter, FourCC, KnownCameraControl,
             KnownCameraControlFlag, RequestedFormat, RequestedFormatType, Resolution,
         },
+        FrameBuffer,
     };
     use std::{
         borrow::Cow,
@@ -340,12 +341,11 @@ mod internal {
         pub fn force_refresh_camera_format(&mut self) -> Result<(), NokhwaError> {
             match self.device.format() {
                 Ok(format) => {
-                    let frame_format = fourcc_to_FourCC(format.fourcc).ok_or(
-                        NokhwaError::GetPropertyError {
+                    let frame_format =
+                        fourcc_to_FourCC(format.fourcc).ok_or(NokhwaError::GetPropertyError {
                             property: "FourCC".to_string(),
                             error: "unsupported".to_string(),
-                        },
-                    )?;
+                        })?;
 
                     let fps = match self.device.params() {
                         Ok(params) => {
@@ -427,13 +427,7 @@ mod internal {
                 }
             };
 
-            let v4l_fcc = match new_fmt.format() {
-                FourCC::MJPEG => FourCC::new(b"MJPG"),
-                FourCC::YUYV => FourCC::new(b"YUYV"),
-                GRAY => FourCC::new(b"GRAY"),
-                FourCC::RAWRGB => FourCC::new(b"RGB3"),
-                FourCC::NV12 => FourCC::new(b"NV12"),
-            };
+            let v4l_fcc = new_format.format();
 
             let format = Format::new(new_fmt.width(), new_fmt.height(), v4l_fcc);
             let frame_rate = Parameters::with_fps(new_fmt.frame_rate());
@@ -796,11 +790,11 @@ mod internal {
 
     fn FourCC_to_fourcc(fourcc: FourCC) -> FourCC {
         match fourcc {
-            FourCC::MJPEG => FourCC::new(b"MJPG"),
-            FourCC::YUYV => FourCC::new(b"YUYV"),
-            GRAY => FourCC::new(b"GRAY"),
-            FourCC::RAWRGB => FourCC::new(b"RGB3"),
-            FourCC::NV12 => FourCC::new(b"NV12"),
+            FourCC::MJPEG => FourCC(*b"MJPG"),
+            FourCC::YUYV => FourCC(*b"YUYV"),
+            GRAY => FourCC(*b"GRAY"),
+            FourCC::RAWRGB => FourCC(*b"RGB3"),
+            FourCC::NV12 => FourCC(*b"NV12"),
         }
     }
 }

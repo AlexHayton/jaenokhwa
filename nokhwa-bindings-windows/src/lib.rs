@@ -29,10 +29,12 @@
 
 #[cfg(all(windows, not(feature = "docs-only")))]
 pub mod wmf {
+    use four_cc::FourCC;
     use nokhwa_core::error::NokhwaError;
+    use nokhwa_core::pixel_format;
     use nokhwa_core::types::{
         ApiBackend, CameraControl, CameraFormat, CameraIndex, CameraInfo, ControlValueDescription,
-        ControlValueSetter, FrameFormat, KnownCameraControl, KnownCameraControlFlag, Resolution,
+        ControlValueSetter, KnownCameraControl, KnownCameraControlFlag, Resolution,
     };
     use once_cell::sync::Lazy;
     use std::ffi::c_void;
@@ -162,24 +164,19 @@ pub mod wmf {
     //     };
     // }
 
-    fn guid_to_frameformat(guid: GUID) -> Option<FrameFormat> {
-        match guid {
-            MF_VIDEO_FORMAT_NV12 => Some(FrameFormat::NV12),
-            MF_VIDEO_FORMAT_RGB24 => Some(FrameFormat::RAWRGB),
-            MF_VIDEO_FORMAT_GRAY => Some(GRAY),
-            MF_VIDEO_FORMAT_YUY2 => Some(FrameFormat::YUYV),
-            MF_VIDEO_FORMAT_MJPEG => Some(FrameFormat::MJPEG),
-            _ => None,
-        }
+    fn guid_to_fourcc(guid: GUID) -> FourCC {
+        let data1 = guid.data1;
+        FourCC::from(&data1.to_le_bytes())
     }
 
-    fn frameformat_to_guid(frameformat: FrameFormat) -> GUID {
+    fn fourcc_to_guid(frameformat: FourCC) -> Option<GUID> {
         match frameformat {
-            FrameFormat::MJPEG => MF_VIDEO_FORMAT_MJPEG,
-            FrameFormat::YUYV => MF_VIDEO_FORMAT_YUY2,
-            FrameFormat::NV12 => MF_VIDEO_FORMAT_NV12,
-            GRAY => MF_VIDEO_FORMAT_GRAY,
-            FrameFormat::RAWRGB => MF_VIDEO_FORMAT_RGB24,
+            pixel_format::MJPEG => Some(MF_VIDEO_FORMAT_MJPEG),
+            pixel_format::YUYV => Some(MF_VIDEO_FORMAT_YUY2),
+            pixel_format::NV12 => Some(MF_VIDEO_FORMAT_NV12),
+            pixel_format::GRAY => Some(MF_VIDEO_FORMAT_GRAY),
+            pixel_format::RAWRGB => Some(MF_VIDEO_FORMAT_RGB24),
+            _ => None,
         }
     }
 
@@ -569,7 +566,7 @@ pub mod wmf {
                 self.source_reader
                     .GetNativeMediaType(MEDIA_FOUNDATION_FIRST_VIDEO_STREAM, index)
             } {
-                let fourcc = match unsafe { media_type.GetGUID(&MF_MT_SUBTYPE) } {
+                let guid = match unsafe { media_type.GetGUID(&MF_MT_SUBTYPE) } {
                     Ok(fcc) => fcc,
                     Err(why) => {
                         return Err(NokhwaError::GetPropertyError {
@@ -578,6 +575,7 @@ pub mod wmf {
                         })
                     }
                 };
+                let fourcc = FourCC::from(guid.data1);
 
                 let (width, height) = match unsafe { media_type.GetUINT64(&MF_MT_FRAME_SIZE) } {
                     Ok(res_u64) => {
@@ -637,16 +635,11 @@ pub mod wmf {
                     framerates
                 };
 
-                let frame_fmt = match guid_to_frameformat(fourcc) {
-                    Some(fcc) => fcc,
-                    None => continue,
-                };
-
                 for frame_rate in framerate_list {
                     if frame_rate != 0 {
                         camera_format_list.push(CameraFormat::new(
                             Resolution::new(width, height),
-                            frame_fmt,
+                            fourcc,
                             frame_rate,
                         ));
                     }
@@ -758,11 +751,11 @@ pub mod wmf {
                         });
                     }
                     ControlValueDescription::IntegerRange {
-                        min: i64::from(min),
-                        max: i64::from(max),
-                        value: i64::from(value),
-                        step: i64::from(step),
-                        default: i64::from(default),
+                        min: min as isize,
+                        max: max as isize,
+                        value: value as isize,
+                        step: step as isize,
+                        default: default as isize,
                     }
                 },
                 MFControlId::CCValue(id) => unsafe {
@@ -787,9 +780,9 @@ pub mod wmf {
                     }
 
                     ControlValueDescription::Integer {
-                        value: i64::from(value),
-                        default: i64::from(default),
-                        step: i64::from(step),
+                        value: value as isize,
+                        default: default as isize,
+                        step: step as isize,
                     }
                 },
                 MFControlId::CCRange(id) => unsafe {
@@ -813,11 +806,11 @@ pub mod wmf {
                         });
                     }
                     ControlValueDescription::IntegerRange {
-                        min: i64::from(min),
-                        max: i64::from(max),
-                        value: i64::from(value),
-                        step: i64::from(step),
-                        default: i64::from(default),
+                        min: min as isize,
+                        max: max as isize,
+                        value: value as isize,
+                        step: step as isize,
+                        default: default as isize,
                     }
                 },
             };
@@ -973,15 +966,7 @@ pub mod wmf {
                     };
 
                     let format = match unsafe { media_type.GetGUID(&MF_MT_SUBTYPE) } {
-                        Ok(fcc) => match guid_to_frameformat(fcc) {
-                            Some(ff) => ff,
-                            None => {
-                                return Err(NokhwaError::GetPropertyError {
-                                    property: "MF_MT_SUBTYPE".to_string(),
-                                    error: "Unknown".to_string(),
-                                })
-                            }
-                        },
+                        Ok(fcc) => guid_to_fourcc(fcc),
                         Err(why) => {
                             return Err(NokhwaError::GetPropertyError {
                                 property: "MF_MT_SUBTYPE".to_string(),
@@ -1028,7 +1013,15 @@ pub mod wmf {
                 bytes[3] = 0x01;
                 u64::from_le_bytes(bytes)
             };
-            let fourcc = frameformat_to_guid(format.format());
+            let guid = fourcc_to_guid(format.format());
+            if guid.is_none() {
+                return Err(NokhwaError::SetPropertyError {
+                    property: "MF_MT_SUBTYPE".to_string(),
+                    value: format.format().to_string(),
+                    error: "Unknown MF_MT_SUBTYPE".to_string(),
+                });
+            }
+
             // setting to the new media_type
             if let Err(why) = unsafe { media_type.SetGUID(&MF_MT_MAJOR_TYPE, &MFMediaType_Video) } {
                 return Err(NokhwaError::SetPropertyError {
@@ -1037,10 +1030,10 @@ pub mod wmf {
                     error: why.to_string(),
                 });
             }
-            if let Err(why) = unsafe { media_type.SetGUID(&MF_MT_SUBTYPE, &fourcc) } {
+            if let Err(why) = unsafe { media_type.SetGUID(&MF_MT_SUBTYPE, &guid.unwrap()) } {
                 return Err(NokhwaError::SetPropertyError {
                     property: "MF_MT_SUBTYPE".to_string(),
-                    value: format!("{:?}", fourcc),
+                    value: format!("{:?}", guid),
                     error: why.to_string(),
                 });
             }
