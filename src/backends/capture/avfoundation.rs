@@ -15,14 +15,15 @@
  */
 #[cfg(target_os = "macos")]
 use flume::{Receiver, Sender};
+use four_cc::FourCC;
 #[cfg(target_os = "macos")]
 use nokhwa_bindings_macos::{
-    AVCaptureDevice, AVCaptureDeviceInput, AVCaptureSession, AVCaptureVideoCallback,
-    AVCaptureVideoDataOutput,
+    AVCaptureDelegate, AVCaptureDeviceInput, AVCaptureDeviceWrapper, AVCaptureSession,
+    AVCaptureVideoDataOutput, ProtocolObject, Queue, QueueAttribute, Retained,
 };
 use nokhwa_core::{
+    buffer::FrameBuffer,
     error::NokhwaError,
-    pixel_format::RgbFormat,
     traits::CaptureBackendTrait,
     types::{
         ApiBackend, CameraControl, CameraFormat, CameraIndex, CameraInfo, ControlValueSetter,
@@ -30,7 +31,7 @@ use nokhwa_core::{
     },
 };
 #[cfg(target_os = "macos")]
-use std::{ffi::CString, sync::Arc};
+use std::sync::Arc;
 
 use std::{borrow::Cow, collections::HashMap};
 
@@ -45,16 +46,16 @@ use std::{borrow::Cow, collections::HashMap};
 #[cfg_attr(feature = "docs-features", doc(cfg(feature = "input-avfoundation")))]
 #[cfg(target_os = "macos")]
 pub struct AVFoundationCaptureDevice {
-    device: AVCaptureDevice,
-    dev_input: Option<AVCaptureDeviceInput>,
-    session: Option<AVCaptureSession>,
-    data_out: Option<AVCaptureVideoDataOutput>,
-    data_collect: Option<AVCaptureVideoCallback>,
+    device: AVCaptureDeviceWrapper,
+    dev_input: Option<Retained<AVCaptureDeviceInput>>,
+    session: Option<Retained<AVCaptureSession>>,
+    data_out: Option<Retained<AVCaptureVideoDataOutput>>,
+    data_collect: Option<Retained<AVCaptureDelegate>>,
     info: CameraInfo,
-    buffer_name: CString,
+    buffer_name: String,
     format: CameraFormat,
-    frame_buffer_receiver: Arc<Receiver<(Vec<u8>, FrameFormat)>>,
-    fbufsnd: Arc<Sender<(Vec<u8>, FrameFormat)>>,
+    frame_buffer_receiver: Arc<Receiver<(Vec<u8>, FourCC)>>,
+    fbufsnd: Arc<Sender<(Vec<u8>, FourCC)>>,
 }
 
 #[cfg(target_os = "macos")]
@@ -65,7 +66,7 @@ impl AVFoundationCaptureDevice {
     /// # Errors
     /// This function will error if the camera is currently busy or if `AVFoundation` can't read device information, or permission was not given by the user.
     pub fn new(index: &CameraIndex, req_fmt: RequestedFormat) -> Result<Self, NokhwaError> {
-        let mut device = AVCaptureDevice::new(index)?;
+        let mut device = AVCaptureDeviceWrapper::new(index)?;
 
         // device.lock()?;
         let formats = device.supported_formats()?;
@@ -75,13 +76,7 @@ impl AVFoundationCaptureDevice {
         device.set_all(camera_fmt)?;
 
         let device_descriptor = device.info().clone();
-        let buffername =
-            CString::new(format!("{}_INDEX{}_", device_descriptor, index)).map_err(|why| {
-                NokhwaError::StructureError {
-                    structure: "CString Buffername".to_string(),
-                    error: why.to_string(),
-                }
-            })?;
+        let buffername = format!("{}_INDEX{}_", device_descriptor, index);
 
         let (send, recv) = flume::unbounded();
         Ok(AVFoundationCaptureDevice {
@@ -109,12 +104,12 @@ impl AVFoundationCaptureDevice {
         width: u32,
         height: u32,
         fps: u32,
-        fourcc: FrameFormat,
+        fourcc: FourCC,
     ) -> Result<Self, NokhwaError> {
         let camera_format = CameraFormat::new_from(width, height, fourcc, fps);
         AVFoundationCaptureDevice::new(
             &CameraIndex::Index(index as u32),
-            RequestedFormat::new::<RgbFormat>(RequestedFormatType::Exact(camera_format)),
+            RequestedFormat::new(RequestedFormatType::Closest(camera_format)),
         )
     }
 }
@@ -148,7 +143,7 @@ impl CaptureBackendTrait for AVFoundationCaptureDevice {
     #[allow(clippy::cast_sign_loss)]
     fn compatible_list_by_resolution(
         &mut self,
-        fourcc: FrameFormat,
+        fourcc: FourCC,
     ) -> Result<HashMap<Resolution, Vec<u32>>, NokhwaError> {
         let supported_cfmt = self
             .device
@@ -167,13 +162,13 @@ impl CaptureBackendTrait for AVFoundationCaptureDevice {
         Ok(res_list)
     }
 
-    fn compatible_fourcc(&mut self) -> Result<Vec<FrameFormat>, NokhwaError> {
+    fn compatible_fourcc(&mut self) -> Result<Vec<FourCC>, NokhwaError> {
         let mut formats = self
             .device
             .supported_formats()?
             .into_iter()
             .map(|fmt| fmt.format())
-            .collect::<Vec<FrameFormat>>();
+            .collect::<Vec<FourCC>>();
         formats.sort();
         formats.dedup();
         Ok(formats)
@@ -199,11 +194,11 @@ impl CaptureBackendTrait for AVFoundationCaptureDevice {
         self.set_camera_format(format)
     }
 
-    fn frame_format(&self) -> FrameFormat {
+    fn frame_format(&self) -> FourCC {
         self.camera_format().format()
     }
 
-    fn set_frame_format(&mut self, fourcc: FrameFormat) -> Result<(), NokhwaError> {
+    fn set_frame_format(&mut self, fourcc: FourCC) -> Result<(), NokhwaError> {
         let mut format = self.camera_format();
         format.set_format(fourcc);
         self.set_camera_format(format)
@@ -240,24 +235,37 @@ impl CaptureBackendTrait for AVFoundationCaptureDevice {
     fn open_stream(&mut self) -> Result<(), NokhwaError> {
         self.refresh_camera_format()?;
 
-        let input = AVCaptureDeviceInput::new(&self.device)?;
+        let input = AVCaptureDeviceInput::from_device(&self.device.raw_device());
+        match input {
+            Ok(_) => {}
+            Err(why) => {
+                return Err(NokhwaError::OpenDeviceError(
+                    "Cannot open device".to_string(),
+                    why.to_string(),
+                ))
+            }
+        }
+        let raw_device = input.unwrap();
         let session = AVCaptureSession::new();
         session.begin_configuration();
-        session.add_input(&input)?;
+        session.add_input(&raw_device);
 
-        self.device.set_all(self.format)?; // hurr durr im an apple api and im fucking dumb hurr durr
+        self.device.set_all(self.format)?;
 
         let bufname = &self.buffer_name;
-        let videocallback = AVCaptureVideoCallback::new(bufname, &self.fbufsnd)?;
         let output = AVCaptureVideoDataOutput::new();
-        output.add_delegate(&videocallback)?;
-        session.add_output(&output)?;
+        let capture_delegate = AVCaptureDelegate::new();
+        let delegate = ProtocolObject::from_ref(&*capture_delegate);
+        let queue = Queue::new(bufname, QueueAttribute::Serial);
+        output.set_sample_buffer_delegate(delegate, &queue);
+        output.set_always_discards_late_video_frames(true);
+        session.add_output(&output);
         session.commit_configuration();
-        session.start()?;
+        session.start_running();
 
-        self.dev_input = Some(input);
+        self.dev_input = Some(raw_device);
         self.session = Some(session);
-        self.data_collect = Some(videocallback);
+        self.data_collect = Some(capture_delegate);
         self.data_out = Some(output);
         Ok(())
     }
@@ -271,16 +279,19 @@ impl CaptureBackendTrait for AVFoundationCaptureDevice {
             return true;
         }
         match &self.session {
+            #[cfg(target_os = "ios")]
             Some(session) => (!session.is_interrupted()) && session.is_running(),
+            #[cfg(target_os = "macos")]
+            Some(session) => session.is_running(),
             None => false,
         }
     }
 
-    fn frame(&mut self) -> Result<Buffer, NokhwaError> {
+    fn frame(&mut self) -> Result<FrameBuffer, NokhwaError> {
         self.refresh_camera_format()?;
         let cfmt = self.camera_format();
         let b = self.frame_raw()?;
-        let buffer = Buffer::new(cfmt.resolution(), b.as_ref(), cfmt.format());
+        let buffer = FrameBuffer::new(cfmt.resolution(), b.as_ref(), cfmt.format());
         let _ = self.frame_buffer_receiver.drain();
         Ok(buffer)
     }
@@ -330,7 +341,7 @@ impl CaptureBackendTrait for AVFoundationCaptureDevice {
 
         session.remove_output(output);
         session.remove_input(input);
-        session.stop();
+        session.stop_running();
 
         self.frame_buffer_receiver.try_iter();
         self.dev_input = None;
@@ -386,7 +397,7 @@ impl AVFoundationCaptureDevice {
         width: u32,
         height: u32,
         fps: u32,
-        fourcc: FrameFormat,
+        fourcc: FourCC,
     ) -> Result<Self, NokhwaError> {
         todo!()
     }
@@ -417,12 +428,12 @@ impl CaptureBackendTrait for AVFoundationCaptureDevice {
 
     fn compatible_list_by_resolution(
         &mut self,
-        _: FrameFormat,
+        _: FourCC,
     ) -> Result<HashMap<Resolution, Vec<u32>>, NokhwaError> {
         todo!()
     }
 
-    fn compatible_fourcc(&mut self) -> Result<Vec<FrameFormat>, NokhwaError> {
+    fn compatible_fourcc(&mut self) -> Result<Vec<FourCC>, NokhwaError> {
         todo!()
     }
 
@@ -442,11 +453,11 @@ impl CaptureBackendTrait for AVFoundationCaptureDevice {
         todo!()
     }
 
-    fn frame_format(&self) -> FrameFormat {
+    fn frame_format(&self) -> FourCC {
         todo!()
     }
 
-    fn set_frame_format(&mut self, _: FrameFormat) -> Result<(), NokhwaError> {
+    fn set_frame_format(&mut self, _: FourCC) -> Result<(), NokhwaError> {
         todo!()
     }
 

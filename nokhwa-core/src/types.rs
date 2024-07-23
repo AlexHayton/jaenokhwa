@@ -490,6 +490,26 @@ impl CameraInfo {
     pub fn name(&self) -> String {
         self.name.clone()
     }
+
+    pub fn unique_id(&self) -> String {
+        self.unique_id.clone()
+    }
+
+    pub fn manufacturer(&self) -> Option<String> {
+        self.manufacturer.clone()
+    }
+
+    pub fn model(&self) -> Option<String> {
+        self.model.clone()
+    }
+
+    pub fn device_type(&self) -> Option<String> {
+        self.device_type.clone()
+    }
+
+    pub fn position(&self) -> Option<String> {
+        self.position.clone()
+    }
 }
 
 impl Display for CameraInfo {

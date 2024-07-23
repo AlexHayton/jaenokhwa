@@ -19,9 +19,10 @@ four-cc = "0.4.0"
 [target.'cfg(any(target_os="macos",target_os="ios"))'.dependencies]
 av-foundation = "0.3.0"
 block = "0.1"
+core-foundation = { version = "0.9"}
 core-media = { version = "0.4", default-features = false, features = ["objc"] }
 core-video = { version = "0.3.1", default-features = false, features = ["objc"] }
-dispatch = "0.2.0"
+dispatch2 = "0.1.0"
 flume = "0.11.0"
 objc2 = "0.5.2"
 objc2-foundation = { version = "0.2.2", features = ["NSGeometry"] }
