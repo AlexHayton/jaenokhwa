@@ -17,7 +17,7 @@
 #![allow(clippy::not_unsafe_ptr_arg_deref)]
 #[cfg(any(target_os = "macos", target_os = "ios"))]
 mod internal {
-    use std::borrow::Cow;
+    use std::{borrow::Cow, ffi::c_void, sync::Arc};
 
     #[cfg(target_os = "ios")]
     use av_foundation::capture_device::{
@@ -26,60 +26,38 @@ mod internal {
     };
     use av_foundation::{
         capture_device::{
-            AVCaptureDevice, AVCaptureDeviceFormat, AVCaptureDevicePosition,
-            AVCaptureDevicePositionUnspecified, AVCaptureDeviceType,
-            AVCaptureDeviceTypeBuiltInWideAngleCamera, AVCaptureDeviceTypeContinuityCamera,
-            AVCaptureDeviceTypeDeskViewCamera, AVCaptureDeviceTypeExternalUnknown,
-            AVCaptureExposureDurationCurrent, AVCaptureFocusModeAutoFocus,
-            AVCaptureFocusModeContinuousAutoFocus, AVCaptureFocusModeLocked, AVCaptureISOCurrent,
-            AVCaptureWhiteBalanceGains,
+            AVCaptureDevice, AVCaptureDeviceFormat, AVCaptureDevicePositionUnspecified,
+            AVCaptureDeviceType, AVCaptureDeviceTypeBuiltInWideAngleCamera,
+            AVCaptureDeviceTypeContinuityCamera, AVCaptureDeviceTypeDeskViewCamera,
+            AVCaptureDeviceTypeExternalUnknown, AVCaptureFocusModeAutoFocus,
+            AVCaptureFocusModeContinuousAutoFocus, AVCaptureFocusModeLocked,
         },
         capture_device_discovery_session::AVCaptureDeviceDiscoverySession,
-        capture_input::AVCaptureDeviceInput,
         capture_output_base::AVCaptureOutput,
-        capture_session::{AVCaptureConnection, AVCaptureSession},
+        capture_session::AVCaptureConnection,
         capture_video_data_output::AVCaptureVideoDataOutputSampleBufferDelegate,
-        media_format::{AVMediaType, AVMediaTypeText, AVMediaTypeTimecode, AVMediaTypeVideo},
+        media_format::AVMediaTypeVideo,
     };
     use core_foundation::base::TCFType;
     use core_media::{
-        format_description::{
-            CMFormatDescriptionGetMediaSubType, CMFormatDescriptionRef,
-            CMVideoFormatDescriptionGetDimensions,
-        },
-        sample_buffer::{
-            CMSampleBuffer, CMSampleBufferGetFormatDescription, CMSampleBufferGetImageBuffer,
-            CMSampleBufferRef,
-        },
+        sample_buffer::{CMSampleBuffer, CMSampleBufferRef},
         time::CMTime,
         OSType,
     };
-    use core_video::{
-        image_buffer::CVImageBufferRef,
-        pixel_buffer::{
-            CVPixelBuffer, CVPixelBufferGetBaseAddress, CVPixelBufferGetDataSize,
-            CVPixelBufferLockBaseAddress, CVPixelBufferUnlockBaseAddress,
-        },
-    };
+    use core_video::pixel_buffer::CVPixelBuffer;
     use flume::{Receiver, Sender};
     use four_cc::FourCC;
     use nokhwa_core::{
         error::NokhwaError,
         types::{
             ApiBackend, CameraControl, CameraFormat, CameraIndex, CameraInfo,
-            ControlValueDescription, ControlValueSetter, KnownCameraControl,
-            KnownCameraControlFlag, Resolution,
+            ControlValueDescription, ControlValueSetter, KnownCameraControl, Resolution,
         },
     };
     use objc2::{
-        class,
-        declare::ClassDecl,
-        declare_class, extern_methods,
-        ffi::{Nil, BOOL, NO, YES},
-        msg_send, msg_send_id, mutability,
+        declare_class, extern_methods, msg_send, msg_send_id, mutability,
         rc::{Allocated, Id, Retained},
-        runtime::{AnyObject, Class, Protocol, Sel},
-        sel, ClassType, DeclaredClass,
+        ClassType, DeclaredClass,
     };
     use objc2_foundation::{NSArray, NSObject, NSObjectProtocol, NSString};
 
@@ -91,7 +69,9 @@ mod internal {
     pub type CompressionData<'a> = (Cow<'a, [u8]>, FourCC);
     pub type DataPipe<'a> = (Sender<CompressionData<'a>>, Receiver<CompressionData<'a>>);
 
-    pub struct DelegateIvars {}
+    pub struct DelegateIvars {
+        sender: *const c_void,
+    }
 
     declare_class!(
         pub struct AVCaptureDelegate;
@@ -119,7 +99,30 @@ mod internal {
                 let sample_buffer = CMSampleBuffer::wrap_under_get_rule(sample_buffer);
                 if let Some(image_buffer) = sample_buffer.get_image_buffer() {
                     if let Some(pixel_buffer) = image_buffer.downcast::<CVPixelBuffer>() {
-                        println!("pixel buffer: {:?}", pixel_buffer);
+                        pixel_buffer.lock_base_address(0);
+                        let _width = pixel_buffer.get_width();
+                        let _height = pixel_buffer.get_height();
+                        let base_address = pixel_buffer.get_base_address();
+                        let pixel_format = pixel_buffer.get_pixel_format();
+                        let buffer_length = pixel_buffer.get_data_size();
+
+                        // Capture the bytes from the buffer
+                        let buffer_as_vec = unsafe {
+                            std::slice::from_raw_parts_mut(base_address as *mut u8, buffer_length as usize)
+                                .to_vec()
+                        };
+
+                        pixel_buffer.unlock_base_address(0);
+
+                        let sender_raw = self.ivars().sender;
+                        let sender: Arc<Sender<(Vec<u8>, FourCC)>> = unsafe {
+                                    let ptr = sender_raw.cast::<Sender<(Vec<u8>, FourCC)>>();
+                                    Arc::from_raw(ptr)
+                                };
+                        if let Err(_) = sender.send((buffer_as_vec, raw_fcc_to_fourcc(pixel_format))) {
+                            return;
+                        }
+                        std::mem::forget(sender);
                     }
                 }
             }
@@ -136,8 +139,16 @@ mod internal {
         unsafe impl AVCaptureDelegate {
             #[method_id(init)]
             fn init(this: Allocated<Self>) -> Option<Id<Self>> {
-                let this = this.set_ivars(DelegateIvars {});
+                let this = this.set_ivars(DelegateIvars {
+                    sender: std::ptr::null(),
+                });
                 unsafe { msg_send_id![super(this), init] }
+            }
+
+            #[method(setSender:)]
+            fn __set_sender(&mut self, sender: *const c_void) -> bool {
+                self.ivars_mut().sender = sender;
+                true
             }
         }
     );
@@ -148,6 +159,13 @@ mod internal {
             pub fn new() -> Id<Self>;
         }
     );
+
+    impl AVCaptureDelegate {
+        pub fn set_sender(&mut self, sender: Arc<Sender<(Vec<u8>, FourCC)>>) -> bool {
+            let raw_sender = Arc::into_raw(sender) as *const c_void;
+            return unsafe { msg_send![self, setSender: raw_sender] };
+        }
+    }
 
     // Delegate compliance method
     // SAFETY: This assumes that the buffer byte size is a u8. Any other size will cause unsafety.
@@ -1299,5 +1317,6 @@ pub use crate::internal::*;
 pub use av_foundation::capture_input::AVCaptureDeviceInput;
 pub use av_foundation::capture_session::AVCaptureSession;
 pub use av_foundation::capture_video_data_output::AVCaptureVideoDataOutput;
+pub use av_foundation::capture_video_data_output::AVCaptureVideoDataOutputSampleBufferDelegate;
 pub use dispatch2::{Queue, QueueAttribute};
 pub use objc2::{rc::Retained, runtime::ProtocolObject};

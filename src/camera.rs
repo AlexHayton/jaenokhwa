@@ -548,9 +548,6 @@ macro_rules! cap_impl_matches {
 }
 
 cap_impl_fn! {
-    // (GStreamerCaptureDevice, new, feature = "input-gst", gst),
-    (OpenCvCaptureDevice, new, feature = "input-opencv", opencv),
-    // (UVCCaptureDevice, create, feature = "input-uvc", uvc),
     (V4LCaptureDevice, new, all(feature = "input-v4l", target_os = "linux"), v4l),
     (MediaFoundationCaptureDevice, new, all(feature = "input-msmf", target_os = "windows"), msmf),
     (AVFoundationCaptureDevice, new, all(feature = "input-avfoundation", any(target_os = "macos", target_os = "ios")), avfoundation)
@@ -565,8 +562,7 @@ fn init_camera(
             backend, index, format,
             ("input-v4l", Video4Linux, init_v4l),
             ("input-msmf", MediaFoundation, init_msmf),
-            ("input-avfoundation", AVFoundation, init_avfoundation),
-            ("input-opencv", OpenCv, init_opencv)
+            ("input-avfoundation", AVFoundation, init_avfoundation)
     };
     Ok(camera_backend)
 }

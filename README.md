@@ -47,7 +47,6 @@ The table below lists current Nokhwa API support.
  | Video4Linux(`input-native`)          | ✅                 | ✅                 | ✅                | Linux               |
  | MSMF(`input-native`)                 | ✅                 | ✅                 | ✅                | Windows             |
  | AVFoundation(`input-native`)   | ✅                 | ✅                 | ✅                | Mac                 |
- | OpenCV(`input-opencv`)^              | ✅                 | ❌                 | ❌                | Linux, Windows, Mac |
  | WASM(`input-wasm`)                | ✅                 | ✅                 | ✅                | Browser(Web)        |
 
  ✅: Working, 🔮 : Experimental, ❌ : Not Supported, 🚧: Planned/WIP
@@ -59,7 +58,6 @@ The default feature includes nothing. Anything starting with `input-*` is a feat
 
 `input-*` features:
  - `input-native`: Uses either V4L2(Linux), MSMF(Windows), or AVFoundation(Mac OS)
- - `input-opencv`: Enables the `opencv` backend. (cross-platform) 
  - `input-jscam`: Enables the use of the `JSCamera` struct, which uses browser APIs. (Web)
 
 Conversely, anything that starts with `output-*` controls a feature that controls the output of something (usually a frame from the camera)
@@ -69,7 +67,6 @@ Conversely, anything that starts with `output-*` controls a feature that control
  - `output-threaded`: Enable the threaded/callback based camera. 
 
 Other features:
- - `decoding`: Enables `mozjpeg` decoding. Enabled by default.
  - `docs-only`: Documentation feature. Enabled for docs.rs builds.
  - `docs-nolink`: Build documentation **without** linking to any libraries. Enabled for docs.rs builds.
  - `test-fail-warning`: Fails on warning. Enabled in CI.

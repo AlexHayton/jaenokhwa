@@ -16,6 +16,7 @@
 #[cfg(target_os = "macos")]
 use flume::{Receiver, Sender};
 use four_cc::FourCC;
+use nokhwa_bindings_macos::AVCaptureVideoDataOutputSampleBufferDelegate;
 #[cfg(target_os = "macos")]
 use nokhwa_bindings_macos::{
     AVCaptureDelegate, AVCaptureDeviceInput, AVCaptureDeviceWrapper, AVCaptureSession,
@@ -55,7 +56,7 @@ pub struct AVFoundationCaptureDevice {
     buffer_name: String,
     format: CameraFormat,
     frame_buffer_receiver: Arc<Receiver<(Vec<u8>, FourCC)>>,
-    fbufsnd: Arc<Sender<(Vec<u8>, FourCC)>>,
+    frame_buffer_sender: Arc<Sender<(Vec<u8>, FourCC)>>,
 }
 
 #[cfg(target_os = "macos")]
@@ -89,7 +90,7 @@ impl AVFoundationCaptureDevice {
             buffer_name: buffername,
             format: camera_fmt,
             frame_buffer_receiver: Arc::new(recv),
-            fbufsnd: Arc::new(send),
+            frame_buffer_sender: Arc::new(send),
         })
     }
 
@@ -254,8 +255,9 @@ impl CaptureBackendTrait for AVFoundationCaptureDevice {
 
         let bufname = &self.buffer_name;
         let output = AVCaptureVideoDataOutput::new();
-        let capture_delegate = AVCaptureDelegate::new();
-        let delegate = ProtocolObject::from_ref(&*capture_delegate);
+        let mut capture_delegate = AVCaptureDelegate::new();
+        capture_delegate.set_sender(self.frame_buffer_sender.clone());
+        let delegate: &ProtocolObject<dyn AVCaptureVideoDataOutputSampleBufferDelegate> = ProtocolObject::from_ref(&*capture_delegate);
         let queue = Queue::new(bufname, QueueAttribute::Serial);
         output.set_sample_buffer_delegate(delegate, &queue);
         output.set_always_discards_late_video_frames(true);

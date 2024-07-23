@@ -1208,9 +1208,7 @@ impl Display for ControlValueSetter {
 /// - `Video4Linux` - `Video4Linux2`, a linux specific backend.
 /// - `UniversalVideoClass` -  ***DEPRECATED*** Universal Video Class (please check [libuvc](https://github.com/libuvc/libuvc)). Platform agnostic, although on linux it needs `sudo` permissions or similar to use.
 /// - `MediaFoundation` - Microsoft Media Foundation, Windows only,
-/// - `OpenCv` - Uses `OpenCV` to capture. Platform agnostic.
 /// - `GStreamer` - ***DEPRECATED*** Uses `GStreamer` RTP to capture. Platform agnostic.
-/// - `Network` - Uses `OpenCV` to capture from an IP.
 /// - `Browser` - Uses browser APIs to capture from a webcam.
 #[derive(Copy, Clone, Debug, Hash, Ord, PartialOrd, Eq, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
@@ -1218,11 +1216,7 @@ pub enum ApiBackend {
     Auto,
     AVFoundation,
     Video4Linux,
-    UniversalVideoClass,
     MediaFoundation,
-    OpenCv,
-    GStreamer,
-    Network,
     Browser,
 }
 
