@@ -1282,12 +1282,12 @@ mod internal {
         }
 
         pub fn active_format(&self) -> Result<CameraFormat, NokhwaError> {
-            let avf_format = self.inner.get_active_format();
-            let resolution = avf_format.video_format_description().get_dimensions();
-            let media_type = avf_format.media_type();
-            let media_type_bytes = media_type.to_string();
-            let fourcc = FourCC::from(media_type_bytes.as_bytes());
-            let mut a = avf_format
+            let capture_device_format = self.inner.get_active_format();
+            let video_format_description = capture_device_format.video_format_description();
+            let resolution = video_format_description.get_dimensions();
+            let fourcc_bytes = video_format_description.get_codec_type();
+            let fourcc = FourCC::from(fourcc_bytes);
+            let mut a = capture_device_format
                 .video_supported_frame_rate_ranges()
                 .into_iter()
                 .map(move |range| {
