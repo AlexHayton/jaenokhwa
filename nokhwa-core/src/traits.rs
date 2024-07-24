@@ -17,7 +17,6 @@
 use crate::{
     buffer::FrameBuffer,
     error::NokhwaError,
-    pixel_format::GRAY,
     types::{
         ApiBackend, CameraControl, CameraFormat, CameraInfo, ControlValueSetter,
         KnownCameraControl, Resolution,
@@ -25,12 +24,6 @@ use crate::{
 };
 use four_cc::FourCC;
 use std::{borrow::Cow, collections::HashMap};
-#[cfg(feature = "wgpu-types")]
-use wgpu::{
-    Device as WgpuDevice, Extent3d, ImageCopyTexture, ImageDataLayout, Queue as WgpuQueue,
-    Texture as WgpuTexture, TextureAspect, TextureDescriptor, TextureDimension, TextureFormat,
-    TextureUsages,
-};
 
 /// This trait is for any backend that allows you to grab and take frames from a camera.
 /// Many of the backends are **blocking**, if the camera is occupied the library will block while it waits for it to become available.
@@ -166,82 +159,6 @@ pub trait CaptureBackendTrait {
     /// # Errors
     /// If the backend fails to get the frame (e.g. already taken, busy, doesn't exist anymore), or [`open_stream()`](CaptureBackendTrait::open_stream()) has not been called yet, this will error.
     fn frame_raw(&mut self) -> Result<Cow<[u8]>, NokhwaError>;
-
-    /// The minimum buffer size needed to write the current frame. If `alpha` is true, it will instead return the minimum size of the buffer with an alpha channel as well.
-    /// This assumes that you are decoding to RGB/RGBA for [`FrameFormat::MJPEG`] or [`FrameFormat::YUYV`] and Luma8/LumaA8 for [`GRAY`]
-    #[must_use]
-    fn decoded_buffer_size(&self, alpha: bool) -> usize {
-        let cfmt = self.camera_format();
-        let resolution = cfmt.resolution();
-        let pxwidth = match cfmt.format() {
-            GRAY => 1,
-            _ => 3,
-        };
-        if alpha {
-            return (resolution.width() * resolution.height() * (pxwidth + 1)) as usize;
-        }
-        (resolution.width() * resolution.height() * pxwidth) as usize
-    }
-
-    #[cfg(feature = "wgpu-types")]
-    #[cfg_attr(feature = "docs-features", doc(cfg(feature = "wgpu-types")))]
-    /// Directly copies a frame to a Wgpu texture. This will automatically convert the frame into a RGBA frame.
-    /// # Errors
-    /// If the frame cannot be captured or the resolution is 0 on any axis, this will error.
-    fn frame_texture<'a>(
-        &mut self,
-        device: &WgpuDevice,
-        queue: &WgpuQueue,
-        label: Option<&'a str>,
-    ) -> Result<WgpuTexture, NokhwaError> {
-        let frame = self.frame()?;
-        let buffer = frame.buffer_bytes();
-
-        let texture_size = Extent3d {
-            width: frame.width(),
-            height: frame.height(),
-            depth_or_array_layers: 1,
-        };
-
-        let texture = device.create_texture(&TextureDescriptor {
-            label,
-            size: texture_size,
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: TextureDimension::D2,
-            format: TextureFormat::Rgba8UnormSrgb,
-            usage: TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST,
-            view_formats: &[],
-        });
-
-        let width_nonzero = match u32::try_from(4 * frame.width()) {
-            Ok(w) => Some(w),
-            Err(why) => return Err(NokhwaError::ReadFrameError(why.to_string())),
-        };
-
-        let height_nonzero = match u32::try_from(frame.height()) {
-            Ok(h) => Some(h),
-            Err(why) => return Err(NokhwaError::ReadFrameError(why.to_string())),
-        };
-
-        queue.write_texture(
-            ImageCopyTexture {
-                texture: &texture,
-                mip_level: 0,
-                origin: wgpu::Origin3d::ZERO,
-                aspect: TextureAspect::All,
-            },
-            &buffer,
-            ImageDataLayout {
-                offset: 0,
-                bytes_per_row: width_nonzero,
-                rows_per_image: height_nonzero,
-            },
-            texture_size,
-        );
-
-        Ok(texture)
-    }
 
     /// Will drop the stream.
     /// # Errors

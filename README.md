@@ -9,8 +9,8 @@ Nokhwa can be added to your crate by adding it to your `Cargo.toml`:
 ```toml
 [dependencies.nokhwa]
 version = "0.10.0"
-# Use the native input backends, enable WGPU integration
-features = ["input-native", "output-wgpu"]
+# Use the native input backends or use input-jscam in a wasm context
+features = ["input-native"]
 ```
 
 Most likely, you will only use functionality provided by the `Camera` struct. If you need lower-level access, you may instead opt to use the raw capture backends found at `nokhwa::backends::capture::*`.
@@ -63,7 +63,6 @@ The default feature includes nothing. Anything starting with `input-*` is a feat
 Conversely, anything that starts with `output-*` controls a feature that controls the output of something (usually a frame from the camera)
 
 `output-*` features:
- - `output-wgpu`: Enables the API to copy a frame directly into a `wgpu` texture.
  - `output-threaded`: Enable the threaded/callback based camera. 
 
 Other features:

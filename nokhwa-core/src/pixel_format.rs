@@ -1,5 +1,6 @@
 use four_cc::FourCC;
 
+pub const YUV420: FourCC = FourCC(*b"420v");
 pub const MJPEG: FourCC = FourCC(*b"MJPG");
 pub const YUYV: FourCC = FourCC(*b"YUYV");
 pub const RAWRGB: FourCC = FourCC(*b"RGB3");

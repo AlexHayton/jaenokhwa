@@ -26,11 +26,10 @@ input-msmf = ["nokhwa-bindings-windows"]
 input-v4l = ["nokhwa-bindings-linux"]
 input-native = ["input-avfoundation", "input-v4l", "input-msmf"]
 input-jscam = ["web-sys", "js-sys", "wasm-bindgen-futures", "wasm-bindgen", "wasm-rs-async-executor"]
-output-wgpu = ["wgpu", "nokhwa-core/wgpu-types"]
 # output-wasm = ["input-jscam"]
 output-threaded = []
 small-wasm = []
-docs-only = ["input-native", "input-jscam", "output-wgpu", "output-threaded", "serialize"]
+docs-only = ["input-native", "input-jscam", "output-threaded", "serialize"]
 docs-nolink = ["nokhwa-core/docs-features"]
 docs-features = []
 test-fail-warning = []
@@ -67,10 +66,6 @@ optional = true
 
 [dependencies.usb_enumeration]
 version = "0.2"
-optional = true
-
-[dependencies.wgpu]
-version = "22"
 optional = true
 
 [dependencies.rgb]

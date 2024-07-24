@@ -25,8 +25,6 @@ use nokhwa_core::{
     },
 };
 use std::{borrow::Cow, collections::HashMap};
-#[cfg(feature = "output-wgpu")]
-use wgpu::{Device as WgpuDevice, Queue as WgpuQueue, Texture as WgpuTexture};
 
 /// The main `Camera` struct. This is the struct that abstracts over all the backends, providing a simplified interface for use.
 pub struct Camera {
@@ -82,7 +80,8 @@ impl Camera {
 
     /// Allows creation of a [`Camera`] with a custom backend. This is useful if you are creating e.g. a custom module.
     ///
-    /// You **must** have set a format beforehand.
+    /// You **must** have set a format beforehand
+    #[must_use]
     pub fn with_custom(
         idx: CameraIndex,
         api: ApiBackend,
@@ -281,9 +280,7 @@ impl Camera {
         let known_controls = self.supported_camera_controls()?;
         let maybe_camera_controls = known_controls
             .iter()
-            .map(|x| self.camera_control(*x))
-            .filter(Result::is_ok)
-            .map(Result::unwrap)
+            .flat_map(|x| self.camera_control(*x))
             .collect::<Vec<CameraControl>>();
 
         Ok(maybe_camera_controls)
@@ -395,20 +392,6 @@ impl Camera {
         let frame = self.frame()?;
         buffer.copy_from_slice(&frame.buffer_bytes());
         Ok(())
-    }
-
-    #[cfg(feature = "output-wgpu")]
-    #[cfg_attr(feature = "docs-features", doc(cfg(feature = "output-wgpu")))]
-    /// Directly copies a frame to a Wgpu texture. This will automatically convert the frame into a RGBA frame.
-    /// # Errors
-    /// If the frame cannot be captured or the resolution is 0 on any axis, this will error.
-    pub fn frame_texture<'a>(
-        &mut self,
-        device: &WgpuDevice,
-        queue: &WgpuQueue,
-        label: Option<&'a str>,
-    ) -> Result<WgpuTexture, NokhwaError> {
-        self.device.frame_texture(device, queue, label)
     }
 
     /// Will drop the stream.

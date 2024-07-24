@@ -39,11 +39,6 @@ use web_sys::{
     HtmlVideoElement, ImageData, MediaDeviceInfo, MediaDeviceKind, MediaDevices, MediaStream,
     MediaStreamConstraints, MediaStreamTrack, MediaStreamTrackState, Navigator, Node, Window,
 };
-#[cfg(feature = "output-wgpu")]
-use wgpu::{
-    Device, Extent3d, ImageCopyTexture, ImageDataLayout, Queue, Texture, TextureAspect,
-    TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
-};
 
 // why no code completion
 // big sadger
@@ -2572,65 +2567,6 @@ impl JSCamera {
 
         buffer.copy_from_slice(image.as_raw());
         Ok(image.len())
-    }
-
-    #[cfg(feature = "output-wgpu")]
-    /// Directly copies a frame to a Wgpu texture. This will automatically convert the frame into a RGBA frame.
-    /// # Errors
-    /// If the frame cannot be captured or the resolution is 0 on any axis, this will error.
-    pub fn frame_texture<'a>(
-        &mut self,
-        device: &Device,
-        queue: &Queue,
-        label: Option<&'a str>,
-    ) -> Result<Texture, NokhwaError> {
-        use std::num::NonZeroU32;
-        let resolution = self.resolution();
-        let frame = self.frame_raw()?;
-
-        let texture_size = Extent3d {
-            width: resolution.width(),
-            height: resolution.height(),
-            depth_or_array_layers: 1,
-        };
-
-        let texture = device.create_texture(&TextureDescriptor {
-            label,
-            size: texture_size,
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: TextureDimension::D2,
-            format: TextureFormat::Rgba8UnormSrgb,
-            usage: TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST,
-        });
-
-        let width_nonzero = match u32::try_from(4 * resolution.width()) {
-            Ok(w) => Some(w),
-            Err(why) => return Err(NokhwaError::ReadFrameError(why.to_string())),
-        };
-
-        let height_nonzero = match u32::try_from(resolution.height()) {
-            Ok(h) => Some(h),
-            Err(why) => return Err(NokhwaError::ReadFrameError(why.to_string())),
-        };
-
-        queue.write_texture(
-            ImageCopyTexture {
-                texture: &texture,
-                mip_level: 0,
-                origin: wgpu::Origin3d::ZERO,
-                aspect: TextureAspect::All,
-            },
-            frame.borrow(),
-            ImageDataLayout {
-                offset: 0,
-                bytes_per_row: width_nonzero,
-                rows_per_image: height_nonzero,
-            },
-            texture_size,
-        );
-
-        Ok(texture)
     }
 
     /// Checks if the stream is open.

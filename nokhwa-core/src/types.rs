@@ -17,19 +17,15 @@ use std::{
 /// - `None`: Pick a random [`CameraFormat`]
 #[derive(Copy, Clone, Debug, Hash, Ord, PartialOrd, Eq, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+#[derive(Default)]
 pub enum RequestedFormatType {
     AbsoluteHighestResolution,
     AbsoluteHighestFrameRate,
     HighestResolution(Resolution),
     HighestFrameRate(u32),
     Closest(CameraFormat),
+    #[default]
     None,
-}
-
-impl Default for RequestedFormatType {
-    fn default() -> Self {
-        RequestedFormatType::None
-    }
 }
 
 impl Display for RequestedFormatType {
@@ -125,12 +121,12 @@ impl RequestedFormat {
             }
             #[allow(clippy::cast_possible_wrap)]
             RequestedFormatType::Closest(c) => {
-                let same_fmt_formats = all_formats
+                let same_fourcc_formats = all_formats
                     .iter()
                     .filter(|x| x.format() == c.format())
                     .copied()
                     .collect::<Vec<CameraFormat>>();
-                let mut resolution_map = same_fmt_formats
+                let mut resolution_map = same_fourcc_formats
                     .iter()
                     .map(|x| {
                         let res = x.resolution();
@@ -146,9 +142,9 @@ impl RequestedFormat {
 
                 let frame_rates = all_formats
                     .iter()
-                    .filter_map(|cfmt| {
-                        if cfmt.format() == c.format() && cfmt.resolution() == c.resolution() {
-                            return Some(cfmt.frame_rate());
+                    .filter_map(|camera_format| {
+                        if camera_format.format() == c.format() && camera_format.resolution() == c.resolution() {
+                            return Some(camera_format.frame_rate());
                         }
                         None
                     })
@@ -491,22 +487,27 @@ impl CameraInfo {
         self.name.clone()
     }
 
+    #[must_use]
     pub fn unique_id(&self) -> String {
         self.unique_id.clone()
     }
 
+    #[must_use]
     pub fn manufacturer(&self) -> Option<String> {
         self.manufacturer.clone()
     }
 
+    #[must_use]
     pub fn model(&self) -> Option<String> {
         self.model.clone()
     }
 
+    #[must_use]
     pub fn device_type(&self) -> Option<String> {
         self.device_type.clone()
     }
 
+    #[must_use]
     pub fn position(&self) -> Option<String> {
         self.position.clone()
     }
@@ -544,7 +545,7 @@ pub enum KnownCameraControl {
     Iris,
     Focus,
     /// Other camera control. Listed is the ID.
-    /// Wasteful, however is needed for a unified API across Windows, Linux, and MacOSX due to Microsoft's usage of GUIDs.
+    /// Wasteful, however is needed for a unified API across Windows, Linux, and `MacOSX` due to Microsoft's usage of GUIDs.
     ///
     /// THIS SHOULD ONLY BE USED WHEN YOU KNOW THE PLATFORM THAT YOU ARE RUNNING ON.
     Other(u128),

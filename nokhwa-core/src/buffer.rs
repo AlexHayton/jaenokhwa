@@ -23,6 +23,7 @@ use four_cc::FourCC;
 ///
 /// Note that decoding on the main thread **will** decrease your performance and lead to dropped frames.
 #[derive(Clone, Debug, Hash, PartialOrd, PartialEq, Eq)]
+#[allow(clippy::module_name_repetitions)]
 pub struct FrameBuffer {
     resolution: Resolution,
     buffer: Bytes,
@@ -74,6 +75,6 @@ impl FrameBuffer {
     /// Get the [`FourCC`] of this buffer.
     #[must_use]
     pub fn source_frame_format(&self) -> FourCC {
-        self.source_frame_format.clone()
+        self.source_frame_format
     }
 }
