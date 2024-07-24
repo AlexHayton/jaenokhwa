@@ -71,12 +71,12 @@ impl CallbackCamera {
     /// # Errors
     /// This will error if you either have a bad platform configuration (e.g. `input-v4l` but not on linux) or the backend cannot create the camera (e.g. permission denied).
     pub fn new(
-        camerainfo: &CameraInfo,
+        cameraindex: CameraIndex,
         format: RequestedFormat,
         callback: impl FnMut(FrameBuffer) + Send + 'static,
     ) -> Result<Self, NokhwaError> {
         let arc_camera = Arc::new(Mutex::new(Camera::new(
-            CameraIndex::String(camerainfo.unique_id()),
+            cameraindex,
             format,
         )?));
         let current_camera = arc_camera

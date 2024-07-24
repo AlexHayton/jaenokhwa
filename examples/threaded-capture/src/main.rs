@@ -16,7 +16,7 @@
 
 use nokhwa::{
     query,
-    utils::{ApiBackend, RequestedFormat, RequestedFormatType},
+    utils::{ApiBackend, CameraIndex, RequestedFormat, RequestedFormatType},
     CallbackCamera,
 };
 
@@ -29,7 +29,7 @@ fn main() {
 
     let first_camera = cameras.first().unwrap();
 
-    let mut threaded = CallbackCamera::new(first_camera, format, |framebuffer| {
+    let mut threaded = CallbackCamera::new(CameraIndex::String(first_camera.unique_id()).clone(), format, |framebuffer| {
         println!(
             "CALLBACK {}x{} {}",
             framebuffer.resolution().width(),
