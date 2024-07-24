@@ -551,7 +551,7 @@ pub mod wmf {
         }
 
         pub fn name(&self) -> String {
-            self.device_specifier.human_name()
+            self.device_specifier.name()
         }
 
         pub fn symlink(&self) -> String {
