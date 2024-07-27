@@ -1314,9 +1314,15 @@ mod internal {
 #[cfg(any(target_os = "macos", target_os = "ios"))]
 pub use crate::internal::*;
 
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 pub use av_foundation::capture_input::AVCaptureDeviceInput;
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 pub use av_foundation::capture_session::AVCaptureSession;
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 pub use av_foundation::capture_video_data_output::AVCaptureVideoDataOutput;
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 pub use av_foundation::capture_video_data_output::AVCaptureVideoDataOutputSampleBufferDelegate;
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 pub use dispatch2::{Queue, QueueAttribute};
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 pub use objc2::{rc::Retained, runtime::ProtocolObject};

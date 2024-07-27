@@ -15,16 +15,16 @@
  */
 #[cfg(target_os = "linux")]
 mod internal {
+    use four_cc::FourCC;
     use nokhwa_core::{
+        buffer::FrameBuffer,
         error::NokhwaError,
-        pixel_format,
         traits::CaptureBackendTrait,
         types::{
             ApiBackend, CameraControl, CameraFormat, CameraIndex, CameraInfo,
-            ControlValueDescription, ControlValueSetter, FourCC, KnownCameraControl,
+            ControlValueDescription, ControlValueSetter, KnownCameraControl,
             KnownCameraControlFlag, RequestedFormat, RequestedFormatType, Resolution,
         },
-        FrameBuffer,
     };
     use std::{
         borrow::Cow,
@@ -38,7 +38,7 @@ mod internal {
         io::traits::CaptureStream,
         prelude::MmapStream,
         video::{capture::Parameters, Capture},
-        Device, Format, FourCC,
+        Device, Format, FourCC as v4l2_FourCC,
     };
     use v4l2_sys_mit::{
         V4L2_CID_BACKLIGHT_COMPENSATION, V4L2_CID_BRIGHTNESS, V4L2_CID_CONTRAST, V4L2_CID_EXPOSURE,
@@ -109,7 +109,11 @@ mod internal {
                             .unwrap_or(format!("{}", node.path().to_string_lossy())),
                         &format!("Video4Linux Device @ {}", node.path().to_string_lossy()),
                         "",
-                        CameraIndex::Index(node.index() as u32),
+                        &node
+                            .name()
+                            .unwrap_or(format!("{}", node.path().to_string_lossy())),
+                        "Video4Linux Device",
+                        "",
                     )
                 })
                 .collect();
@@ -165,10 +169,7 @@ mod internal {
             }?;
 
             for ff in frame_formats {
-                let framefmt = match fourcc_to_FourCC(ff) {
-                    Some(s) => s,
-                    None => continue,
-                };
+                let framefmt = FourCC(ff.repr);
                 // i write unmaintainable blobs of code because i am so cute uwu~~
                 let mut formats = device
                     .enum_framesizes(ff)
@@ -238,7 +239,7 @@ mod internal {
             if let Err(why) = device.set_format(&Format::new(
                 format.width(),
                 format.height(),
-                FourCC_to_fourcc(format.format()),
+                v4l2_FourCC::new(&format.format().0),
             )) {
                 return Err(NokhwaError::SetPropertyError {
                     property: "Resolution, FourCC".to_string(),
@@ -267,7 +268,9 @@ mod internal {
                     &device_caps.card,
                     &device_caps.driver,
                     &format!("{} {:?}", device_caps.bus, device_caps.version),
-                    index,
+                    &device_caps.driver,
+                    &device_caps.bus,
+                    "Front",
                 ),
                 device,
                 stream_handle: None,
@@ -300,15 +303,12 @@ mod internal {
             let camera_format = CameraFormat::new_from(width, height, fourcc, fps);
             V4LCaptureDevice::new(
                 &index,
-                RequestedFormat::with_formats(
-                    RequestedFormatType::Exact(camera_format),
-                    vec![camera_format.format()].as_slice(),
-                ),
+                RequestedFormat::new(RequestedFormatType::Closest(camera_format)),
             )
         }
 
         fn get_resolution_list(&self, fourcc: FourCC) -> Result<Vec<Resolution>, NokhwaError> {
-            let format = FourCC_to_fourcc(fourcc);
+            let format = v4l2_FourCC::new(&fourcc.0);
 
             // match Capture::enum_framesizes(&self.device, format) {
             match self.device.enum_framesizes(format) {
@@ -341,11 +341,7 @@ mod internal {
         pub fn force_refresh_camera_format(&mut self) -> Result<(), NokhwaError> {
             match self.device.format() {
                 Ok(format) => {
-                    let frame_format =
-                        fourcc_to_FourCC(format.fourcc).ok_or(NokhwaError::GetPropertyError {
-                            property: "FourCC".to_string(),
-                            error: "unsupported".to_string(),
-                        })?;
+                    let frame_format = FourCC(format.fourcc.repr);
 
                     let fps = match self.device.params() {
                         Ok(params) => {
@@ -427,7 +423,7 @@ mod internal {
                 }
             };
 
-            let v4l_fcc = new_format.format();
+            let v4l_fcc = v4l2_FourCC::new(&new_fmt.format().0);
 
             let format = Format::new(new_fmt.width(), new_fmt.height(), v4l_fcc);
             let frame_rate = Parameters::with_fps(new_fmt.frame_rate());
@@ -487,17 +483,17 @@ mod internal {
 
         fn compatible_list_by_resolution(
             &mut self,
-            fourcc: FourCC,
+            format: FourCC,
         ) -> Result<HashMap<Resolution, Vec<u32>>, NokhwaError> {
-            let resolutions = self.get_resolution_list(fourcc)?;
-            let format = FourCC_to_fourcc(fourcc);
+            let resolutions = self.get_resolution_list(format)?;
             let mut res_map = HashMap::new();
             for res in resolutions {
                 let mut compatible_fps = vec![];
-                match self
-                    .device
-                    .enum_frameintervals(format, res.width(), res.height())
-                {
+                match self.device.enum_frameintervals(
+                    v4l2_FourCC::new(&format.0),
+                    res.width(),
+                    res.height(),
+                ) {
                     Ok(intervals) => {
                         for interval in intervals {
                             match interval.interval {
@@ -533,10 +529,7 @@ mod internal {
                 Ok(formats) => {
                     let mut frame_format_vec = vec![];
                     for format in formats {
-                        match fourcc_to_FourCC(format.fourcc) {
-                            Some(ff) => frame_format_vec.push(ff),
-                            None => continue,
-                        }
+                        frame_format_vec.push(FourCC(format.fourcc.repr));
                     }
                     frame_format_vec.sort();
                     frame_format_vec.dedup();
@@ -619,11 +612,11 @@ mod internal {
                             | Type::IntegerMenu,
                             Value::Integer(current),
                         ) => ControlValueDescription::IntegerRange {
-                            min: desc.minimum as i64,
-                            max: desc.maximum,
-                            value: current,
-                            step: desc.step as i64,
-                            default: desc.default,
+                            min: desc.minimum as isize,
+                            max: desc.maximum as isize,
+                            value: current as isize,
+                            step: desc.step as isize,
+                            default: desc.default as isize,
                         },
                         (Type::Boolean, Value::Boolean(current)) => {
                             ControlValueDescription::Boolean {
@@ -699,7 +692,7 @@ mod internal {
         ) -> Result<(), NokhwaError> {
             let conv_value = match value.clone() {
                 ControlValueSetter::None => Value::None,
-                ControlValueSetter::Integer(i) => Value::Integer(i),
+                ControlValueSetter::Integer(i) => Value::Integer(i as i64),
                 ControlValueSetter::Boolean(b) => Value::Boolean(b),
                 ControlValueSetter::String(s) => Value::String(s),
                 ControlValueSetter::Bytes(b) => Value::CompoundU8(b),
@@ -735,7 +728,7 @@ mod internal {
         }
 
         fn open_stream(&mut self) -> Result<(), NokhwaError> {
-            let stream = match MmapStream::new(&self.device, v4l::FrameBuffer::Type::VideoCapture) {
+            let stream = match MmapStream::new(&self.device, v4l::buffer::Type::VideoCapture) {
                 Ok(s) => s,
                 Err(why) => return Err(NokhwaError::OpenStreamError(why.to_string())),
             };
@@ -774,27 +767,6 @@ mod internal {
                 self.stream_handle = None;
             }
             Ok(())
-        }
-    }
-
-    fn fourcc_to_FourCC(fourcc: FourCC) -> Option<FourCC> {
-        match fourcc.str().ok()? {
-            "YUYV" => Some(FourCC::YUYV),
-            "MJPG" => Some(FourCC::MJPEG),
-            "GRAY" => Some(GRAY),
-            "RGB3" => Some(FourCC::RAWRGB),
-            "NV12" => Some(FourCC::NV12),
-            _ => None,
-        }
-    }
-
-    fn FourCC_to_fourcc(fourcc: FourCC) -> FourCC {
-        match fourcc {
-            FourCC::MJPEG => FourCC(*b"MJPG"),
-            FourCC::YUYV => FourCC(*b"YUYV"),
-            GRAY => FourCC(*b"GRAY"),
-            FourCC::RAWRGB => FourCC(*b"RGB3"),
-            FourCC::NV12 => FourCC(*b"NV12"),
         }
     }
 }
