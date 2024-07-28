@@ -44,6 +44,11 @@ mod query;
 #[cfg_attr(feature = "docs-features", doc(cfg(feature = "output-threaded")))]
 pub mod threaded;
 
+/// Convert to RGB using ffimage-yuv
+#[cfg(feature = "output-convert-to-rgb")]
+#[cfg_attr(feature = "docs-features", doc(cfg(feature = "output-convert-to-rgb")))]
+pub mod convert_to_rgb;
+
 pub use camera::Camera;
 pub use nokhwa_core::buffer::FrameBuffer;
 pub use nokhwa_core::error::NokhwaError;

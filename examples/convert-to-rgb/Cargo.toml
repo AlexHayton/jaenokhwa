@@ -1,0 +1,21 @@
+[package]
+name = "convert-to-rgb"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+four-cc = "0.4"
+ffimage = "0.10.0"
+ffimage_yuv = "0.10.0"
+turbojpeg = "1.1.0"
+eframe = { version = "0.28.1", default-features = false, features = ["glow"] }
+
+[dependencies.image]
+version = "0.25"
+default-features = false
+
+[dependencies.nokhwa]
+path = "../.."
+features = ["output-convert-to-rgb", "output-threaded"]

@@ -1,6 +1,6 @@
 [package]
 name = "nokhwa"
-version = "0.10.3"
+version = "0.11.0"
 authors = ["l1npengtul <l1npengtul@protonmail.com>"]
 edition = "2021"
 description = "A Simple-to-use, cross-platform Rust Webcam Capture Library"
@@ -19,7 +19,7 @@ exclude = ["examples/jscam"]
 crate-type = ["cdylib", "rlib"]
 
 [features]
-default = ["flume"]
+default = ["flume", "input-native", "output-convert-to-rgb"]
 serialize = ["serde", "nokhwa-core/serialize"]
 input-avfoundation = ["nokhwa-bindings-macos"]
 input-msmf = ["nokhwa-bindings-windows"]
@@ -28,6 +28,7 @@ input-native = ["input-avfoundation", "input-v4l", "input-msmf"]
 input-jscam = ["web-sys", "js-sys", "wasm-bindgen-futures", "wasm-bindgen", "wasm-rs-async-executor"]
 # output-wasm = ["input-jscam"]
 output-threaded = []
+output-convert-to-rgb = ["ffimage_yuv", "ffimage"]
 small-wasm = []
 docs-only = ["input-native", "input-jscam", "output-threaded", "serialize"]
 docs-nolink = ["nokhwa-core/docs-features"]
@@ -60,12 +61,16 @@ optional = true
 version = "0.25"
 default-features = false
 
-[dependencies.v4l]
-version = "0.14"
+[dependencies.ffimage_yuv]
+version = "0.10"
 optional = true
 
-[dependencies.usb_enumeration]
-version = "0.2"
+[dependencies.ffimage]
+version = "0.10"
+optional = true
+
+[dependencies.v4l]
+version = "0.14"
 optional = true
 
 [dependencies.rgb]
@@ -85,10 +90,6 @@ optional = true
 [dependencies.nokhwa-bindings-linux]
 version = "0.1.0"
 path = "nokhwa-bindings-linux"
-optional = true
-
-[dependencies.regex]
-version = "1.7"
 optional = true
 
 [dependencies.web-sys]
