@@ -72,10 +72,6 @@ features = ["software-scaling", "build"]
 version = "0.14"
 optional = true
 
-[dependencies.rgb]
-version = "0.8"
-optional = true
-
 [dependencies.nokhwa-bindings-windows]
 version = "0.4.0"
 path = "nokhwa-bindings-windows"
