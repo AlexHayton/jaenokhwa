@@ -1,10 +1,10 @@
-cd nokhwa-core || exit
+cd jaenokhwa-core || exit
 cargo publish
-cd ../nokhwa-bindings-linux || exit
+cd ../jaenokhwa-bindings-linux || exit
 cargo publish
-cd ../nokhwa-bindings-macos || exit
+cd ../jaenokhwa-bindings-macos || exit
 cargo publish
-cd ../nokhwa-bindings-windows || exit
+cd ../jaenokhwa-bindings-windows || exit
 cargo publish
 cd .. || exit
 cargo publish

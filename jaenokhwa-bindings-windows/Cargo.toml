@@ -1,5 +1,5 @@
 [package]
-name = "nokhwa-bindings-windows"
+name = "jaenokhwa-bindings-windows"
 version = "0.4.0"
 authors = ["l1npengtul"]
 edition = "2021"
@@ -13,7 +13,7 @@ keywords = ["media-foundation", "windows", "capture", "webcam"]
 [dependencies]
 four-cc = "0.4.0"
 
-[dependencies.nokhwa-core]
+[dependencies.jaenokhwa-core]
 version = "0.1.0"
 path = "../nokhwa-core"
 

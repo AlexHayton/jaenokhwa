@@ -1,8 +1,5 @@
-#![deny(clippy::pedantic)]
-#![warn(clippy::all)]
-#![cfg_attr(feature = "test-fail-warning", deny(warnings))]
-#![cfg_attr(feature = "docs-features", feature(doc_cfg))]
 /*
+ * Copyright 2024 Alex Hayton / The Jaenokhwa Contributors
  * Copyright 2022 l1npengtul <l1npengtul@protonmail.com> / The Nokhwa Contributors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,9 +15,12 @@
  * limitations under the License.
  */
 
-//! Core type definitions for `nokhwa`
-pub mod buffer;
-pub mod error;
-pub mod pixel_format;
-pub mod traits;
-pub mod types;
+#[cfg(any(target_os = "macos", target_os = "ios"))]
+fn main() {
+    println!("cargo:rustc-link-lib=framework=CoreMedia");
+    println!("cargo:rustc-link-lib=framework=AVFoundation");
+    println!("cargo:rustc-link-lib=framework=CoreVideo");
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "ios")))]
+fn main() {}

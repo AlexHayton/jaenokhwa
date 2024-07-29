@@ -1,5 +1,5 @@
 [package]
-name = "nokhwa-bindings-linux"
+name = "jaenokhwa-bindings-linux"
 version = "0.1.0"
 edition = "2021"
 license = "Apache-2.0"
@@ -11,10 +11,10 @@ keywords = ["v4l", "v4l2", "linux", "capture", "webcam"]
 [dependencies]
 four-cc = "0.4.0"
 
-[dependencies.nokhwa-core]
+[dependencies.jaenokhwa-core]
 version = "0.1.0"
 path = "../nokhwa-core"
 
 [target.'cfg(target_os="linux")'.dependencies]
-v4l = "0.13"
-v4l2-sys-mit = "0.2"
+v4l = "0.14"
+v4l2-sys-mit = "0.3"

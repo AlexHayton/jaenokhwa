@@ -1,5 +1,5 @@
 [package]
-name = "nokhwa-bindings-macos"
+name = "jaenokhwa-bindings-macos"
 version = "0.2.0"
 edition = "2021"
 authors = ["l1npengtul"]
@@ -9,7 +9,7 @@ description = "The AVFoundation bindings crate for `nokhwa`"
 keywords = ["avfoundation", "macos", "capture", "webcam"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[dependencies.nokhwa-core]
+[dependencies.jaenokhwa-core]
 version = "0.1.0"
 path = "../nokhwa-core"
 

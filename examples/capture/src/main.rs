@@ -1,4 +1,5 @@
 /*
+ * Copyright 2024 Alex Hayton / The Jaenokhwa Contributors
  * Copyright 2022 l1npengtul <l1npengtul@protonmail.com> / The Nokhwa Contributors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,7 +27,7 @@ use ggez::{
     graphics::{Canvas, Image},
     Context, ContextBuilder, GameError,
 };
-use nokhwa::{
+use jaenokhwa::{
     buffer::FrameBuffer,
     native_api_backend,
     pixel_format::{MJPEG, NV12, YUYV},

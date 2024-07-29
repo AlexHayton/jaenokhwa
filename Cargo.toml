@@ -1,18 +1,18 @@
 [package]
-name = "nokhwa"
+name = "jaenokhwa"
 version = "0.11.0"
-authors = ["l1npengtul <l1npengtul@protonmail.com>"]
+authors = ["Alex Hayton", "l1npengtul <l1npengtul@protonmail.com>"]
 edition = "2021"
-description = "A Simple-to-use, cross-platform Rust Webcam Capture Library"
-keywords = ["camera", "webcam", "capture", "cross-platform"]
+description = "An easy-to-use, cross-platform Rust Webcam Capture Library for native and WASM"
+keywords = ["camera", "webcam", "capture", "cross-platform", "ios", "avfoundation", "media-foundation", "objc", "v4l", "wasm"]
 categories = ["api-bindings", "multimedia", "os", "web-programming"]
 license = "Apache-2.0"
-repository = "https://github.com/l1npengtul/nokhwa"
+repository = "https://github.com/AlexHayton/jaenokhwa"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [workspace]
-members = ["nokhwa-bindings-macos", "nokhwa-bindings-windows", "nokhwa-bindings-linux", "nokhwa-core", "examples/*"]
+members = ["jaenokhwa-bindings-macos", "jaenokhwa-bindings-windows", "jaenokhwa-bindings-linux", "jaenokhwa-core", "examples/*"]
 exclude = ["examples/jscam"]
 
 [lib]
@@ -20,10 +20,10 @@ crate-type = ["cdylib", "rlib"]
 
 [features]
 default = ["flume", "input-native", "output-convert-to-rgb"]
-serialize = ["serde", "nokhwa-core/serialize"]
-input-avfoundation = ["nokhwa-bindings-macos"]
-input-msmf = ["nokhwa-bindings-windows"]
-input-v4l = ["nokhwa-bindings-linux"]
+serialize = ["serde", "jaenokhwa-core/serialize"]
+input-avfoundation = ["jaenokhwa-bindings-macos"]
+input-msmf = ["jaenokhwa-bindings-windows"]
+input-v4l = ["jaenokhwa-bindings-linux"]
 input-native = ["input-avfoundation", "input-v4l", "input-msmf"]
 input-jscam = ["web-sys", "js-sys", "wasm-bindgen-futures", "wasm-bindgen", "wasm-rs-async-executor"]
 # output-wasm = ["input-jscam"]
@@ -31,7 +31,7 @@ output-threaded = []
 output-convert-to-rgb = ["ffmpeg-next"]
 small-wasm = []
 docs-only = ["input-native", "input-jscam", "output-threaded", "serialize"]
-docs-nolink = ["nokhwa-core/docs-features"]
+docs-nolink = ["jaenokhwa-core/docs-features"]
 docs-features = []
 test-fail-warning = []
 
@@ -46,9 +46,9 @@ four-cc = { git = "https://github.com/AlexHayton/four-cc.git" }
 core-video = { git = "https://github.com/AlexHayton/core-video-rs.git" }
 av-foundation = { git = "https://github.com/AlexHayton/av-foundation-rs.git" }
 
-[dependencies.nokhwa-core]
+[dependencies.jaenokhwa-core]
 version = "0.1.0"
-path = "nokhwa-core"
+path = "jaenokhwa-core"
 
 [dependencies.serde]
 version = "1.0"
@@ -72,19 +72,19 @@ features = ["software-scaling", "build"]
 version = "0.14"
 optional = true
 
-[dependencies.nokhwa-bindings-windows]
+[dependencies.jaenokhwa-bindings-windows]
 version = "0.4.0"
-path = "nokhwa-bindings-windows"
+path = "jaenokhwa-bindings-windows"
 optional = true
 
-[dependencies.nokhwa-bindings-macos]
+[dependencies.jaenokhwa-bindings-macos]
 version = "0.2.0"
-path = "nokhwa-bindings-macos"
+path = "jaenokhwa-bindings-macos"
 optional = true
 
-[dependencies.nokhwa-bindings-linux]
+[dependencies.jaenokhwa-bindings-linux]
 version = "0.1.0"
-path = "nokhwa-bindings-linux"
+path = "jaenokhwa-bindings-linux"
 optional = true
 
 [dependencies.web-sys]

@@ -1,6 +1,7 @@
 #!/bin/sh
 
 #
+# Copyright 2024 Alex Hayton / The Jaenokhwa Contributors
 # Copyright 2022 l1npengtul <l1npengtul@protonmail.com> / The Nokhwa Contributors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,4 +18,4 @@
 #
 
 wasm-pack build --release --target web -- --features "input-jscam, output-wasm, small-wasm, test-fail-warning" --no-default-features
-mv pkg/nokhwa* nokhwajs/
+mv pkg/jaenokhwa* jaenokhwajs/

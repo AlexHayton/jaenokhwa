@@ -6,7 +6,7 @@ use std::{
 
 use eframe::egui::{self, ColorImage};
 use ffmpeg_next::format::Pixel;
-use nokhwa::{
+use jaenokhwa::{
     convert_to_rgb::ConvertToRgb,
     utils::{CameraIndex, RequestedFormat, RequestedFormatType},
     CallbackCamera,
