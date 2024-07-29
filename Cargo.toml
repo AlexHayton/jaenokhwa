@@ -65,6 +65,8 @@ default-features = false
 [dependencies.ffmpeg-next]
 version = "7.0.2"
 optional = true
+default-features = false
+features = ["software-scaling", "build"]
 
 [dependencies.v4l]
 version = "0.14"
