@@ -25,7 +25,6 @@ use nokhwa_core::{
         KnownCameraControl, RequestedFormat, RequestedFormatType, Resolution,
     },
 };
-use std::thread::JoinHandle;
 use std::{
     collections::HashMap,
     sync::{
@@ -33,6 +32,7 @@ use std::{
         Arc, Mutex,
     },
 };
+use std::{thread::JoinHandle, time::Instant};
 
 type AtomicLock<T> = Arc<Mutex<T>>;
 pub type CallbackFn = fn(
@@ -75,10 +75,7 @@ impl CallbackCamera {
         format: RequestedFormat,
         callback: impl FnMut(FrameBuffer) + Send + 'static,
     ) -> Result<Self, NokhwaError> {
-        let arc_camera = Arc::new(Mutex::new(Camera::new(
-            cameraindex,
-            format,
-        )?));
+        let arc_camera = Arc::new(Mutex::new(Camera::new(cameraindex, format)?));
         let current_camera = arc_camera
             .lock()
             .map_err(|why| NokhwaError::GetPropertyError {
@@ -94,6 +91,7 @@ impl CallbackCamera {
                 Resolution::new(0, 0),
                 &vec![],
                 GRAY,
+                Instant::now(),
             ))),
             die_bool: Arc::new(Default::default()),
             current_camera,
@@ -113,6 +111,7 @@ impl CallbackCamera {
                 Resolution::new(0, 0),
                 &vec![],
                 GRAY,
+                Instant::now(),
             ))),
             die_bool: Arc::new(Default::default()),
             current_camera,
@@ -171,6 +170,7 @@ impl CallbackCamera {
             new_fmt.resolution(),
             &Vec::default(),
             self.camera_format()?.format(),
+            Instant::now(),
         );
         let request = RequestedFormat::new(RequestedFormatType::Closest(new_fmt));
         let set_fmt = self
@@ -248,8 +248,12 @@ impl CallbackCamera {
         *self
             .last_frame_captured
             .lock()
-            .map_err(|why| NokhwaError::GeneralError(why.to_string()))? =
-            FrameBuffer::new(new_res, &Vec::default(), self.camera_format()?.format());
+            .map_err(|why| NokhwaError::GeneralError(why.to_string()))? = FrameBuffer::new(
+            new_res,
+            &Vec::default(),
+            self.camera_format()?.format(),
+            Instant::now(),
+        );
         self.camera
             .lock()
             .map_err(|why| NokhwaError::SetPropertyError {

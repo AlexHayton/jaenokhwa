@@ -7,14 +7,10 @@ edition = "2018"
 
 [dependencies]
 four-cc = "0.4"
-ffimage = "0.10.0"
-ffimage_yuv = "0.10.0"
+once_cell = "1.19"
+ffmpeg-next = "7.0.1"
 turbojpeg = "1.1.0"
 eframe = { version = "0.28.1", default-features = false, features = ["glow"] }
-
-[dependencies.image]
-version = "0.25"
-default-features = false
 
 [dependencies.nokhwa]
 path = "../.."

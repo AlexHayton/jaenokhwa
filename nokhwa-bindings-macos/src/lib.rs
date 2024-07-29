@@ -17,7 +17,7 @@
 #![allow(clippy::not_unsafe_ptr_arg_deref)]
 #[cfg(any(target_os = "macos", target_os = "ios"))]
 mod internal {
-    use std::{borrow::Cow, ffi::c_void, sync::Arc};
+    use std::{ffi::c_void, sync::Arc, time::Instant};
 
     #[cfg(target_os = "ios")]
     use av_foundation::capture_device::{
@@ -45,9 +45,10 @@ mod internal {
         OSType,
     };
     use core_video::pixel_buffer::CVPixelBuffer;
-    use flume::{Receiver, Sender};
+    use flume::Sender;
     use four_cc::FourCC;
     use nokhwa_core::{
+        buffer::FrameBuffer,
         error::NokhwaError,
         types::{
             ApiBackend, CameraControl, CameraFormat, CameraIndex, CameraInfo,
@@ -66,8 +67,7 @@ mod internal {
         FourCC::from(raw)
     }
 
-    pub type CompressionData<'a> = (Cow<'a, [u8]>, FourCC);
-    pub type DataPipe<'a> = (Sender<CompressionData<'a>>, Receiver<CompressionData<'a>>);
+    pub type SenderType = Sender<FrameBuffer>;
 
     pub struct DelegateIvars {
         sender: *const c_void,
@@ -100,8 +100,8 @@ mod internal {
                 if let Some(image_buffer) = sample_buffer.get_image_buffer() {
                     if let Some(pixel_buffer) = image_buffer.downcast::<CVPixelBuffer>() {
                         pixel_buffer.lock_base_address(0);
-                        let _width = pixel_buffer.get_width();
-                        let _height = pixel_buffer.get_height();
+                        let width = pixel_buffer.get_width();
+                        let height = pixel_buffer.get_height();
                         let base_address = pixel_buffer.get_base_address();
                         let pixel_format = pixel_buffer.get_pixel_format();
                         let buffer_length = pixel_buffer.get_data_size();
@@ -115,11 +115,12 @@ mod internal {
                         pixel_buffer.unlock_base_address(0);
 
                         let sender_raw = self.ivars().sender;
-                        let sender: Arc<Sender<(Vec<u8>, FourCC)>> = unsafe {
-                                    let ptr = sender_raw.cast::<Sender<(Vec<u8>, FourCC)>>();
+                        let sender: Arc<SenderType> = unsafe {
+                                    let ptr = sender_raw.cast::<SenderType>();
                                     Arc::from_raw(ptr)
                                 };
-                        if let Err(_) = sender.send((buffer_as_vec, raw_fcc_to_fourcc(pixel_format))) {
+                        let framebuffer = FrameBuffer::new(Resolution::new(width as u32, height as u32), &buffer_as_vec, raw_fcc_to_fourcc(pixel_format), Instant::now());
+                        if let Err(_) = sender.send(framebuffer) {
                             return;
                         }
                         std::mem::forget(sender);
@@ -161,55 +162,11 @@ mod internal {
     );
 
     impl AVCaptureDelegate {
-        pub fn set_sender(&mut self, sender: Arc<Sender<(Vec<u8>, FourCC)>>) -> bool {
+        pub fn set_sender(&mut self, sender: Arc<SenderType>) -> bool {
             let raw_sender = Arc::into_raw(sender) as *const c_void;
             return unsafe { msg_send![self, setSender: raw_sender] };
         }
     }
-
-    // Delegate compliance method
-    // SAFETY: This assumes that the buffer byte size is a u8. Any other size will cause unsafety.
-    // #[allow(non_snake_case)]
-    // #[allow(non_upper_case_globals)]
-    // extern "C" fn capture_out_callback(
-    //     this: &mut AnyObject,
-    //     _: Sel,
-    //     _: *mut AnyObject,
-    //     didOutputSampleBuffer: CMSampleBufferRef,
-    //     _: *mut AnyObject,
-    // ) {
-    //     let format = unsafe { CMSampleBufferGetFormatDescription(didOutputSampleBuffer) };
-    //     let media_subtype = unsafe { CMFormatDescriptionGetMediaSubType(format) };
-    //     let media_subtype_fcc = FourCC::from(media_subtype);
-    //     println!("media_subtype_fcc: {:?}", media_subtype_fcc);
-
-    //     let image_buffer: CVImageBufferRef =
-    //         unsafe { CMSampleBufferGetImageBuffer(didOutputSampleBuffer) };
-    //     unsafe {
-    //         CVPixelBufferLockBaseAddress(image_buffer, 0);
-    //     };
-
-    //     let buffer_length = unsafe { CVPixelBufferGetDataSize(image_buffer) };
-    //     let buffer_ptr = unsafe { CVPixelBufferGetBaseAddress(image_buffer) };
-    //     let buffer_as_vec = unsafe {
-    //         std::slice::from_raw_parts_mut(buffer_ptr as *mut u8, buffer_length as usize)
-    //             .to_vec()
-    //     };
-
-    //     unsafe { CVPixelBufferUnlockBaseAddress(image_buffer, 0) };
-    //     // oooooh scarey unsafe
-    //     // AAAAAAAAAAAAAAAAAAAAAAAAA
-    //     // https://c.tenor.com/0e_zWtFLOzQAAAAC/needy-streamer-overload-needy-girl-overdose.gif
-    //     let bufferlck_cv: *const c_void = unsafe { msg_send![this, bufferPtr] };
-    //     let buffer_sndr: Arc<Sender<(Vec<u8>, FourCC)>> = unsafe {
-    //         let ptr = bufferlck_cv.cast::<Sender<(Vec<u8>, FourCC)>>();
-    //         Arc::from_raw(ptr)
-    //     };
-    //     if let Err(_) = buffer_sndr.send((buffer_as_vec, GRAY)) {
-    //         return;
-    //     }
-    //     std::mem::forget(buffer_sndr);
-    // }
 
     pub fn query_avfoundation() -> Result<Vec<CameraInfo>, NokhwaError> {
         #[cfg(any(target_os = "macos"))]
@@ -320,6 +277,8 @@ mod internal {
         }
 
         pub fn supported_formats(&self) -> Result<Vec<CameraFormat>, NokhwaError> {
+            println!("Formats {:?}", self.inner.formats());
+
             Ok(self
                 .inner
                 .formats()

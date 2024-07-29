@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+use std::time;
+
 use crate::types::Resolution;
 use bytes::Bytes;
 use four_cc::FourCC;
@@ -25,6 +27,7 @@ use four_cc::FourCC;
 #[derive(Clone, Debug, Hash, PartialOrd, PartialEq, Eq)]
 #[allow(clippy::module_name_repetitions)]
 pub struct FrameBuffer {
+    timestamp: time::Instant,
     resolution: Resolution,
     buffer: Bytes,
     source_frame_format: FourCC,
@@ -34,10 +37,11 @@ impl FrameBuffer {
     /// Creates a new buffer with a [`&[u8]`].
     #[must_use]
     #[inline]
-    pub fn new(res: Resolution, buf: &[u8], source_frame_format: FourCC) -> Self {
+    pub fn new(resolution: Resolution, buffer: &[u8], source_frame_format: FourCC, timestamp: time::Instant) -> Self {
         Self {
-            resolution: res,
-            buffer: Bytes::copy_from_slice(buf),
+            timestamp,
+            resolution: resolution,
+            buffer: Bytes::copy_from_slice(buffer),
             source_frame_format,
         }
     }

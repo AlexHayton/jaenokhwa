@@ -55,8 +55,8 @@ pub struct AVFoundationCaptureDevice {
     info: CameraInfo,
     buffer_name: String,
     format: CameraFormat,
-    frame_buffer_receiver: Arc<Receiver<(Vec<u8>, FourCC)>>,
-    frame_buffer_sender: Arc<Sender<(Vec<u8>, FourCC)>>,
+    frame_buffer_receiver: Arc<Receiver<FrameBuffer>>,
+    frame_buffer_sender: Arc<Sender<FrameBuffer>>,
 }
 
 #[cfg(target_os = "macos")]
@@ -257,7 +257,8 @@ impl CaptureBackendTrait for AVFoundationCaptureDevice {
         let output = AVCaptureVideoDataOutput::new();
         let mut capture_delegate = AVCaptureDelegate::new();
         capture_delegate.set_sender(self.frame_buffer_sender.clone());
-        let delegate: &ProtocolObject<dyn AVCaptureVideoDataOutputSampleBufferDelegate> = ProtocolObject::from_ref(&*capture_delegate);
+        let delegate: &ProtocolObject<dyn AVCaptureVideoDataOutputSampleBufferDelegate> =
+            ProtocolObject::from_ref(&*capture_delegate);
         let queue = Queue::new(bufname, QueueAttribute::Serial);
         output.set_sample_buffer_delegate(delegate, &queue);
         output.set_always_discards_late_video_frames(true);
@@ -291,19 +292,24 @@ impl CaptureBackendTrait for AVFoundationCaptureDevice {
 
     fn frame(&mut self) -> Result<FrameBuffer, NokhwaError> {
         self.refresh_camera_format()?;
-        let cfmt = self.camera_format();
-        let b = self.frame_raw()?;
-        let buffer = FrameBuffer::new(cfmt.resolution(), b.as_ref(), cfmt.format());
+        let result = match self.frame_buffer_receiver.recv() {
+            Ok(recv) => recv,
+            Err(why) => {
+                return Err(NokhwaError::ReadFrameError(why.to_string()));
+            }
+        };
         let _ = self.frame_buffer_receiver.drain();
-        Ok(buffer)
+        Ok(result)
     }
 
     fn frame_raw(&mut self) -> Result<Cow<[u8]>, NokhwaError> {
         let result = match self.frame_buffer_receiver.recv() {
-            Ok(recv) => Ok(Cow::from(recv.0)),
-            Err(why) => Err(NokhwaError::ReadFrameError(why.to_string())),
+            Ok(recv) => Cow::from(recv.buffer().to_vec()),
+            Err(why) => {
+                return Err(NokhwaError::ReadFrameError(why.to_string()));
+            }
         };
-        result
+        Ok(result)
     }
 
     fn stop_stream(&mut self) -> Result<(), NokhwaError> {

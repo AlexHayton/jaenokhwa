@@ -1,15 +1,24 @@
-use std::{ops::Deref, sync::{Arc, Mutex}, time::Instant};
+use std::{
+    ops::Deref,
+    sync::{Arc, Mutex},
+    time::{Duration, Instant},
+};
 
 use eframe::egui::{self, ColorImage};
-use image::{ImageBuffer, RgbImage};
+use ffmpeg_next::format::Pixel;
 use nokhwa::{
     convert_to_rgb::ConvertToRgb,
     utils::{CameraIndex, RequestedFormat, RequestedFormatType},
-    CallbackCamera
+    CallbackCamera,
 };
+use once_cell::sync::Lazy;
 
 static mut TEXTURE: Option<Arc<Mutex<egui::TextureHandle>>> = None;
-static mut FRAME_COUNTER: u32 = 0;
+static mut FRAME_COUNTER: u64 = 0;
+static mut LAST_STATS: once_cell::sync::Lazy<Instant> = Lazy::new(|| Instant::now());
+static STATS_INTERVAL_SECS: u64 = 10;
+static mut IMAGE_CONVERT_TIMES: Vec<Duration> = Vec::new();
+static mut EGUI_TEXTURE_TIMES: Vec<Duration> = Vec::new();
 
 #[derive(Default)]
 struct MyApp {
@@ -20,49 +29,35 @@ impl MyApp {
     fn new(ctx: &eframe::CreationContext<'_>) -> Self {
         let index = CameraIndex::Index(0);
         // request the absolute highest frame rate camera (stress test)
-        let requested = RequestedFormat::new(RequestedFormatType::AbsoluteHighestFrameRate);
+        let requested = RequestedFormat::new(RequestedFormatType::AbsoluteHighestResolution);
         let mut camera = CallbackCamera::new(index, requested, move |framebuffer| {
             let width = framebuffer.width();
             let height = framebuffer.height();
-            println!(
-                "Original Framebuffer format: {:?} {}x{}",
-                framebuffer.source_frame_format(),
-                framebuffer.width(),
-                framebuffer.height()
-            );
-            println!(
-                "Original Framebuffer size in bytes: {}",
-                framebuffer.buffer().len()
-            );
-
-            let start = Instant::now();
-            let rgb_data = framebuffer.convert_to_rgb_bytes();
-            println!("Conversion took: {:?}", start.elapsed());
-            println!("Converted RGB buffer size in bytes: {}", rgb_data.len());
-            let imagebuffer: RgbImage =
-                ImageBuffer::from_raw(width, height, rgb_data).expect("Failed to load image");
-
-            // Save as JPEG
-            let yuv_image = turbojpeg::YuvImage {
-                pixels: framebuffer.buffer(),
-                width: width as usize,
-                height: height as usize,
-                align: 2,
-                subsamp: turbojpeg::Subsamp::Sub2x2,
-            };
-            let jpeg_data = turbojpeg::compress_yuv(yuv_image.as_deref(), 90).unwrap();
-
-            // write the JPEG to disk
-            let result = std::fs::write(std::env::temp_dir().join("same_parrots.jpg"), &jpeg_data);
-            if let Err(e) = result {
-                println!("Failed to write JPEG: {}", e);
+            if unsafe { FRAME_COUNTER } == 0 {
+                println!(
+                    "Original Framebuffer format: {:?} {}x{}",
+                    framebuffer.source_frame_format(),
+                    framebuffer.width(),
+                    framebuffer.height()
+                );
+                println!(
+                    "Original Framebuffer size in bytes: {}",
+                    framebuffer.buffer().len()
+                );
+                println!("Will output stats every 10 seconds");
             }
 
-            let image = image::DynamicImage::ImageRgb8(imagebuffer);
-            let rgba_image = image.to_rgba8();
+            let start_image_convert = Instant::now();
+            let rgb_data = framebuffer.convert_to_rgb(Pixel::RGB24);
+            unsafe { IMAGE_CONVERT_TIMES.push(start_image_convert.elapsed()) };
+
             let size = [width as usize, height as usize];
-            let pixels = rgba_image.into_vec();
-            let color_image = egui::ColorImage::from_rgba_unmultiplied(size, &pixels);
+            let start_egui_texture = Instant::now();
+            
+            let color_image = ColorImage::from_rgb(size, &rgb_data);
+
+            unsafe { EGUI_TEXTURE_TIMES.push(start_egui_texture.elapsed()) };
+
             match unsafe { TEXTURE.as_ref() } {
                 None => {
                     panic!("This should never happen");
@@ -74,8 +69,36 @@ impl MyApp {
                     unsafe { FRAME_COUNTER += 1 };
                 }
             }
+
+            unsafe {
+                if LAST_STATS.elapsed() >= Duration::from_secs(STATS_INTERVAL_SECS) {
+                    let total_image_convert_time: Duration = IMAGE_CONVERT_TIMES.iter().sum();
+                    let average_image_convert_time =
+                        total_image_convert_time / IMAGE_CONVERT_TIMES.len() as u32;
+                    println!(
+                        "Average YUV => RGB conversion time: {:?}",
+                        average_image_convert_time
+                    );
+                    IMAGE_CONVERT_TIMES.clear();
+
+                    let total_egui_texture_time: Duration = EGUI_TEXTURE_TIMES.iter().sum();
+                    let average_egui_texture_time =
+                        total_egui_texture_time / EGUI_TEXTURE_TIMES.len() as u32;
+                    println!(
+                        "Average egui texture creation time: {:?}",
+                        average_egui_texture_time
+                    );
+                    EGUI_TEXTURE_TIMES.clear();
+
+                    LAST_STATS = Lazy::new(|| Instant::now());
+                    println!("Average frame rate: {:?}", FRAME_COUNTER as f32 / 10.0);
+                }
+            }
         })
         .unwrap();
+
+        let compatible_fourcc = camera.compatible_fourcc().unwrap();
+        println!("Compatible FourCCs: {:?}", compatible_fourcc);
 
         let camera_format = camera.camera_format();
         let frame_format = camera.frame_format();
@@ -112,6 +135,7 @@ impl MyApp {
 
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        ctx.request_repaint();
         egui::CentralPanel::default().show(ctx, |ui| match unsafe { TEXTURE.as_ref() } {
             None => {
                 ui.label("Loading...");

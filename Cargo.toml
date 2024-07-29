@@ -28,7 +28,7 @@ input-native = ["input-avfoundation", "input-v4l", "input-msmf"]
 input-jscam = ["web-sys", "js-sys", "wasm-bindgen-futures", "wasm-bindgen", "wasm-rs-async-executor"]
 # output-wasm = ["input-jscam"]
 output-threaded = []
-output-convert-to-rgb = ["ffimage_yuv", "ffimage"]
+output-convert-to-rgb = ["ffmpeg-next"]
 small-wasm = []
 docs-only = ["input-native", "input-jscam", "output-threaded", "serialize"]
 docs-nolink = ["nokhwa-core/docs-features"]
@@ -41,6 +41,7 @@ paste = "1.0"
 four-cc = "0.4.0"
 
 [patch.crates-io]
+ffmpeg-sys-next = { git = "https://github.com/AlexHayton/rust-ffmpeg-sys.git" }
 four-cc = { git = "https://github.com/AlexHayton/four-cc.git" }
 core-video = { git = "https://github.com/AlexHayton/core-video-rs.git" }
 av-foundation = { git = "https://github.com/AlexHayton/av-foundation-rs.git" }
@@ -61,12 +62,8 @@ optional = true
 version = "0.25"
 default-features = false
 
-[dependencies.ffimage_yuv]
-version = "0.10"
-optional = true
-
-[dependencies.ffimage]
-version = "0.10"
+[dependencies.ffmpeg-next]
+version = "7.0.2"
 optional = true
 
 [dependencies.v4l]
