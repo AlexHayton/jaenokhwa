@@ -1,10 +1,6 @@
-use ffmpeg_next::{
-    format::Pixel,
-    frame::Video,
-    software::scaling::{Context, Flags},
-};
 use nokhwa_core::buffer::FrameBuffer;
 use nokhwa_core::pixel_format::{UYVY_APPLE, YUV420};
+libyuv:
 
 pub trait ConvertToRgb {
     fn convert_to_rgb(&self, _output_format: Pixel) -> Vec<u8> {
@@ -14,26 +10,41 @@ pub trait ConvertToRgb {
 
 impl ConvertToRgb for FrameBuffer {
     fn convert_to_rgb(&self, output_format: Pixel) -> Vec<u8> {
-        let pixel_format = match self.source_frame_format() {
+        let buffer = self.buffer();
+        let width = self.width() as usize;
+        let height = self.height() as usize;
+        let mut output_buffer: [u8; 4] = [0; width * height * 4];
+
+        let argb_data = match self.source_frame_format() {
             YUV420 => Pixel::YUV420P,
-            UYVY_APPLE => Pixel::UYVY422,
+            UYVY_APPLE => uyvy_to_argb(buffer.as_ptr(),
+            (width * 2) as i32,),
+
             _ => panic!("Unsupported pixel format {}", self.source_frame_format()),
         };
 
-        let scaler = Context::get(
-            pixel_format,
-            self.width(),
-            self.height(),
-            output_format,
-            self.width(),
-            self.height(),
-            Flags::BILINEAR,
-        );
+        unsafe {
+            ConvertToI420(
+                buffer.as_ptr(),
+                (width * 2) as i32, // UYVY stride
+                y_buffer.as_mut_ptr(),
+                width as i32,
+                u_buffer.as_mut_ptr(),
+                (width / 2) as i32,
+                v_buffer.as_mut_ptr(),
+                (width / 2) as i32,
+                0, 0,
+                width as i32,
+                height as i32,
+                width as i32,
+                height as i32,
+                FilterMode::kFilterNone,
+                libyuv::RotationMode::kRotate0,
+                libyuv::FourCC::UYVY,
+            );
+        }
         match scaler {
             Ok(mut scaler) => {
-                let buffer = self.buffer();
-                let width = self.width() as usize;
-                let height = self.height() as usize;
 
                 // let mut output_buffer = vec![0u8; self.width() as usize * self.height() as usize * 4];
                 let mut input_buffer = Video::new(pixel_format, self.width(), self.height());
