@@ -28,6 +28,11 @@ jobs:
       - uses: jwlawson/actions-setup-cmake@v2
       - name: Checkout sources
         uses: actions/checkout@v2
+      - name: Set MSVC target (windows only)
+        if: matrix.os == 'windows-latest'
+        run: |
+          echo "[build]" > .cargo/config
+          echo "target = "x86_64-pc-windows-msvc" >> .cargo/config
       - name: Build example
         working-directory: examples/${{ matrix.example }}
         run: cargo build
