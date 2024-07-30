@@ -30,7 +30,7 @@ jobs:
       
       - name: Install alsa-tools (ubuntu only)
         if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get install alsa-tools
+        run: sudo apt-get install -y alsa-tools libasound2-dev libudev-dev
       - name: Set MSVC target (windows only)
         if: matrix.os == 'windows-latest'
         run: bash ./scripts/set-windows-msvc.sh
