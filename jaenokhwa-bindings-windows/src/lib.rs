@@ -358,10 +358,18 @@ pub mod wmf {
 
     pub fn query_media_foundation_descriptors() -> Result<Vec<CameraInfo>, NokhwaError> {
         let mut device_list = vec![];
-
-        for (activate_ptr) in query_activate_pointers().iter() {
-            device_list.push(activate_to_descriptors(&activate_ptr)?);
+        match query_activate_pointers() {
+            Ok(activate_list) => {
+                for activate_ptr in activate_list {
+                    match activate_to_descriptors(&activate_ptr) {
+                        Ok(descriptor) => device_list.push(descriptor),
+                        Err(why) => return Err(why),
+                    }
+                }
+            }
+            Err(why) => return Err(why),
         }
+
         Ok(device_list)
     }
 
@@ -443,6 +451,7 @@ pub mod wmf {
                         };
 
                     let source_reader_attr = {
+                        #[allow(clippy::manual_let_else)]
                         let attr = match {
                             let mut attr: Option<IMFAttributes> = None;
 
@@ -680,13 +689,13 @@ pub mod wmf {
                         &mut flag,
                     ) {
                         return Err(NokhwaError::GetPropertyError {
-                            property: format!("{:?}: {} - Range", control_id, control),
+                            property: format!("{control_id:?}: {control} - Range"),
                             error: why.to_string(),
                         });
                     }
                     if let Err(why) = video_proc_amp.Get(id, &mut value, &mut flag) {
                         return Err(NokhwaError::GetPropertyError {
-                            property: format!("{:?}: {} - Value", control_id, control),
+                            property: format!("{control_id:?}: {control} - Value"),
                             error: why.to_string(),
                         });
                     }
@@ -708,13 +717,13 @@ pub mod wmf {
                         &mut flag,
                     ) {
                         return Err(NokhwaError::GetPropertyError {
-                            property: format!("{:?}: {} - Range", control_id, control),
+                            property: format!("{control_id:?}: {control} - Range"),
                             error: why.to_string(),
                         });
                     }
                     if let Err(why) = video_proc_amp.Get(id, &mut value, &mut flag) {
                         return Err(NokhwaError::GetPropertyError {
-                            property: format!("{:?}: {} - Value", control_id, control),
+                            property: format!("{control_id:?}: {control} - Value"),
                             error: why.to_string(),
                         });
                     }
@@ -736,13 +745,13 @@ pub mod wmf {
                         &mut flag,
                     ) {
                         return Err(NokhwaError::GetPropertyError {
-                            property: format!("{:?}: {} - Range", control_id, control),
+                            property: format!("{control_id:?}: {control} - Range"),
                             error: why.to_string(),
                         });
                     }
                     if let Err(why) = camera_control.Get(id, &mut value, &mut flag) {
                         return Err(NokhwaError::GetPropertyError {
-                            property: format!("{:?}: {} - Value", control_id, control),
+                            property: format!("{control_id:?}: {control} - Value"),
                             error: why.to_string(),
                         });
                     }
@@ -763,13 +772,13 @@ pub mod wmf {
                         &mut flag,
                     ) {
                         return Err(NokhwaError::GetPropertyError {
-                            property: format!("{:?}: {} - Range", control_id, control),
+                            property: format!("{control_id:?}: {control} - Range"),
                             error: why.to_string(),
                         });
                     }
                     if let Err(why) = camera_control.Get(id, &mut value, &mut flag) {
                         return Err(NokhwaError::GetPropertyError {
-                            property: format!("{:?}: {} - Value", control_id, control),
+                            property: format!("{control_id:?}: {control} - Value"),
                             error: why.to_string(),
                         });
                     }
@@ -853,7 +862,7 @@ pub mod wmf {
                 ControlValueSetter::Boolean(b) => i32::from(b),
                 v => {
                     return Err(NokhwaError::StructureError {
-                        structure: format!("ControlValueSetter {}", v),
+                        structure: format!("ControlValueSetter {v}"),
                         error: "invalid value type".to_string(),
                     })
                 }
@@ -959,6 +968,9 @@ pub mod wmf {
             self.device_format
         }
 
+        // Set the format of the camera
+        // # Panics
+        // If the format is not supported by the camera
         pub fn set_format(&mut self, format: CameraFormat) -> Result<(), NokhwaError> {
             // convert to media_type
             let media_type: IMFMediaType = match unsafe { MFCreateMediaType() } {
@@ -1001,7 +1013,7 @@ pub mod wmf {
             if let Err(why) = unsafe { media_type.SetGUID(&MF_MT_SUBTYPE, &guid.unwrap()) } {
                 return Err(NokhwaError::SetPropertyError {
                     property: "MF_MT_SUBTYPE".to_string(),
-                    value: format!("{:?}", guid),
+                    value: format!("{guid:?}"),
                     error: why.to_string(),
                 });
             }
@@ -1162,7 +1174,7 @@ pub mod wmf {
                     CAMERA_REFCNT.store(CAMERA_REFCNT.load(Ordering::SeqCst) - 1, Ordering::SeqCst);
                 }
                 if CAMERA_REFCNT.load(Ordering::SeqCst) == 0 {
-                    #[allow(clippy::let_underscore_drop)]
+                    #[allow(let_underscore_drop)]
                     let _ = de_initialize_mf();
                 }
             }

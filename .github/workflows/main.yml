@@ -31,9 +31,14 @@ jobs:
       - name: Install alsa-tools (ubuntu only)
         if: matrix.os == 'ubuntu-latest'
         run: sudo apt-get install -y alsa-tools libasound2-dev libudev-dev
-      - name: Set MSVC target (windows only)
+      - name: "Activate MSYS2 on Windows"
         if: matrix.os == 'windows-latest'
-        run: bash ./scripts/set-windows-msvc.sh
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            clang
 
       - name: Cargo build main project (Default features)
         run: cargo build
