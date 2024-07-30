@@ -284,10 +284,7 @@ pub mod wmf {
         Ok(device_list)
     }
 
-    fn activate_to_descriptors(
-        index: CameraIndex,
-        imf_activate: &IMFActivate,
-    ) -> Result<CameraInfo, NokhwaError> {
+    fn activate_to_descriptors(imf_activate: &IMFActivate) -> Result<CameraInfo, NokhwaError> {
         let mut pwstr_name = PWSTR(&mut 0_u16);
         let mut len_pwstrname = 0;
         let mut pwstr_symlink = PWSTR(&mut 0_u16);
@@ -350,21 +347,20 @@ pub mod wmf {
         };
 
         Ok(CameraInfo::new(
-            &name,
-            "MediaFoundation Camera",
             &symlink,
-            index,
+            &name,
+            "",
+            "",
+            "MediaFoundation Camera",
+            "",
         ))
     }
 
     pub fn query_media_foundation_descriptors() -> Result<Vec<CameraInfo>, NokhwaError> {
         let mut device_list = vec![];
 
-        for (index, activate_ptr) in query_activate_pointers()?.into_iter().enumerate() {
-            device_list.push(activate_to_descriptors(
-                CameraIndex::Index(index as u32),
-                &activate_ptr,
-            )?);
+        for (activate_ptr) in query_activate_pointers().iter() {
+            device_list.push(activate_to_descriptors(&activate_ptr)?);
         }
         Ok(device_list)
     }
@@ -428,7 +424,7 @@ pub mod wmf {
                             Some(activate) => {
                                 match unsafe { activate.ActivateObject::<IMFMediaSource>() } {
                                     Ok(media_source) => {
-                                        (media_source, activate_to_descriptors(index, &activate)?)
+                                        (media_source, activate_to_descriptors(&activate)?)
                                     }
                                     Err(why) => {
                                         return Err(NokhwaError::OpenDeviceError(
@@ -506,49 +502,19 @@ pub mod wmf {
                     let devicelist = query_media_foundation_descriptors()?;
                     let mut id_eq = None;
 
-                    for mfdev in devicelist {
-                        if mfdev.misc() == s {
-                            id_eq = Some(mfdev.index().as_index()?);
+                    for (position, mfdevice) in devicelist.iter().enumerate() {
+                        if mfdevice.unique_id() == s {
+                            id_eq = Some(CameraIndex::Index(position as u32));
                             break;
                         }
                     }
 
                     match id_eq {
-                        Some(index) => Self::new(CameraIndex::Index(index)),
+                        Some(index) => Self::new(index),
                         None => Err(NokhwaError::OpenDeviceError(s, "Not Found".to_string())),
                     }
                 }
             }
-        }
-        //
-        // pub fn with_string(unique_id: &[u16]) -> Result<Self, NokhwaError> {
-        //     let devicelist = query_media_foundation_descriptors()?;
-        //     let mut id_eq = None;
-        //
-        //     for mfdev in devicelist {
-        //         if (mfdev.symlink() as &[u16]) == unique_id {
-        //             id_eq = Some(mfdev.index().as_index()?);
-        //             break;
-        //         }
-        //     }
-        //
-        //     match id_eq {
-        //         Some(index) => Self::new(index),
-        //         None => {
-        //             return Err(BindingError::DeviceOpenFailError(
-        //                 std::str::from_utf8(
-        //                     &unique_id.iter().map(|x| *x as u8).collect::<Vec<u8>>(),
-        //                 )
-        //                 .unwrap_or("")
-        //                 .to_string(),
-        //                 "Not Found".to_string(),
-        //             ))
-        //         }
-        //     }
-        // }
-
-        pub fn index(&self) -> &CameraIndex {
-            self.device_specifier.index()
         }
 
         pub fn name(&self) -> String {
@@ -556,7 +522,7 @@ pub mod wmf {
         }
 
         pub fn symlink(&self) -> String {
-            self.device_specifier.misc()
+            self.device_specifier.unique_id()
         }
 
         pub fn compatible_format_list(&mut self) -> Result<Vec<CameraFormat>, NokhwaError> {
