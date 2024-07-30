@@ -6,17 +6,15 @@
 
 on:
   push: {}
-    
 
-name: Compile and check all examples
+name: Compile and check main project
 
 # We specify the examples individually since they might need a different environment
 jobs:
-  compile_examples:
+  compile_and_check:
     strategy:
       fail-fast: false
       matrix:
-        example: ["capture", "convert-to-rgb", "threaded-capture"]
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     defaults:
@@ -27,11 +25,9 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Checkout sources
         uses: actions/checkout@v2
-      - name: Build example
-        working-directory: examples/{{ matrix.example }}
+      - name: Cargo build main project (Default features)
         run: cargo build
-      - name: Clippy example
-        working-directory: examples/{{ matrix.example }}
+      - name: Cargo build main project (Optional features)
+        run: cargo build --features serialize,output-threaded 
+      - name: Cargo clippy main project
         run: cargo clippy
-
-    
