@@ -26,6 +26,8 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Checkout sources
         uses: actions/checkout@v2
+      - name: Cargo build all projects
+        run: bash ./scripts/build-all.sh
       - name: Cargo clippy all projects
         run: bash ./scripts/clippy-all.sh
 

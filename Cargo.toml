@@ -20,7 +20,7 @@ crate-type = ["cdylib", "rlib"]
 
 [features]
 default = ["flume", "input-native", "output-convert-to-rgb"]
-serialize = ["serde", "jaenokhwa-core/serialize"]
+serialize = ["serde", "jaenokhwa-core/serialize", "four-cc/serde"]
 input-avfoundation = ["jaenokhwa-bindings-macos"]
 input-msmf = ["jaenokhwa-bindings-windows"]
 input-v4l = ["jaenokhwa-bindings-linux"]
