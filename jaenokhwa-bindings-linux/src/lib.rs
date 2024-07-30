@@ -31,6 +31,7 @@ mod internal {
         borrow::Cow,
         collections::HashMap,
         io::{self, ErrorKind},
+        time::Instant,
     };
     use v4l::{
         control::{Control, Flags, Type, Value},
