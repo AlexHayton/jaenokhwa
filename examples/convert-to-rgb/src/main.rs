@@ -15,15 +15,13 @@ use once_cell::sync::Lazy;
 
 static mut TEXTURE: Option<Arc<Mutex<egui::TextureHandle>>> = None;
 static mut FRAME_COUNTER: u64 = 0;
-static mut LAST_STATS: once_cell::sync::Lazy<Instant> = Lazy::new(|| Instant::now());
+static mut LAST_STATS: once_cell::sync::Lazy<Instant> = Lazy::new(Instant::now);
 static STATS_INTERVAL_SECS: u64 = 10;
 static mut IMAGE_CONVERT_TIMES: Vec<Duration> = Vec::new();
 static mut EGUI_TEXTURE_TIMES: Vec<Duration> = Vec::new();
 
 #[derive(Default)]
-struct MyApp {
-    camera: Option<CallbackCamera>,
-}
+struct MyApp {}
 
 impl MyApp {
     fn new(ctx: &eframe::CreationContext<'_>) -> Self {
@@ -53,7 +51,7 @@ impl MyApp {
 
             let size = [width as usize, height as usize];
             let start_egui_texture = Instant::now();
-            
+
             let color_image = ColorImage::from_rgb(size, &rgb_data);
 
             unsafe { EGUI_TEXTURE_TIMES.push(start_egui_texture.elapsed()) };
@@ -90,7 +88,7 @@ impl MyApp {
                     );
                     EGUI_TEXTURE_TIMES.clear();
 
-                    LAST_STATS = Lazy::new(|| Instant::now());
+                    LAST_STATS = Lazy::new(Instant::now);
                     println!("Average frame rate: {:?}", FRAME_COUNTER as f32 / 10.0);
                 }
             }
@@ -127,9 +125,7 @@ impl MyApp {
         // Restore app state using cc.storage (requires the "persistence" feature).
         // Use the cc.gl (a glow::Context) to create graphics shaders and buffers that you can use
         // for e.g. egui::PaintCallback.
-        let mut app = Self::default();
-        app.camera = Some(camera);
-        app
+        MyApp {}
     }
 }
 

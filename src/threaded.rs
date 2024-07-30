@@ -90,11 +90,11 @@ impl CallbackCamera {
             frame_callback: Arc::new(Mutex::new(Box::new(callback))),
             last_frame_captured: Arc::new(Mutex::new(FrameBuffer::new(
                 Resolution::new(0, 0),
-                &vec![],
+                &[],
                 GRAY,
                 Instant::now(),
             ))),
-            die_bool: Arc::new(Default::default()),
+            die_bool: Arc::new(AtomicBool::default()),
             current_camera,
             handle: Arc::new(Mutex::new(None)),
         })
@@ -110,22 +110,25 @@ impl CallbackCamera {
             frame_callback: Arc::new(Mutex::new(Box::new(callback))),
             last_frame_captured: Arc::new(Mutex::new(FrameBuffer::new(
                 Resolution::new(0, 0),
-                &vec![],
+                &[],
                 GRAY,
                 Instant::now(),
             ))),
-            die_bool: Arc::new(Default::default()),
+            die_bool: Arc::new(AtomicBool::default()),
             current_camera,
             handle: Arc::new(Mutex::new(None)),
         }
     }
 
     /// Gets the current Camera's unique ID.
+    #[must_use]
     pub fn index(&self) -> String {
         self.current_camera.unique_id()
     }
 
     /// Gets the current Camera's backend
+    /// # Errors
+    /// If the camera is not queryable or a query operation has failed, this will error.
     pub fn backend(&self) -> Result<ApiBackend, NokhwaError> {
         Ok(self
             .camera
@@ -145,11 +148,14 @@ impl CallbackCamera {
     }
 
     /// Gets the camera information such as Name and Index as a [`CameraInfo`].
+    #[must_use]
     pub fn info(&self) -> &CameraInfo {
         &self.current_camera
     }
 
     /// Gets the current [`CameraFormat`].
+    /// # Errors
+    /// If the camera is not queryable or a query operation has failed, this will error.
     pub fn camera_format(&self) -> Result<CameraFormat, NokhwaError> {
         Ok(self
             .camera
@@ -230,6 +236,8 @@ impl CallbackCamera {
     }
 
     /// Gets the current camera resolution (See: [`Resolution`], [`CameraFormat`]).
+    /// # Errors
+    /// If the resolution cannot be collected, this will error.
     pub fn resolution(&self) -> Result<Resolution, NokhwaError> {
         Ok(self
             .camera
@@ -266,6 +274,8 @@ impl CallbackCamera {
     }
 
     /// Gets the current camera framerate (See: [`CameraFormat`]).
+    /// # Errors
+    /// If the framerate cannot be collected, this will error.
     pub fn frame_rate(&self) -> Result<u32, NokhwaError> {
         Ok(self
             .camera
@@ -293,6 +303,8 @@ impl CallbackCamera {
     }
 
     /// Gets the current camera's frame format (See: [`CameraFormat`]).
+    /// # Errors
+    /// If the frame format cannot be collected, this will error.
     pub fn frame_format(&self) -> Result<FourCC, NokhwaError> {
         Ok(self
             .camera
@@ -339,9 +351,7 @@ impl CallbackCamera {
         let known_controls = self.supported_camera_controls()?;
         let maybe_camera_controls = known_controls
             .iter()
-            .map(|x| self.camera_control(*x))
-            .filter(Result::is_ok)
-            .map(Result::unwrap)
+            .flat_map(|x| self.camera_control(*x))
             .collect::<Vec<CameraControl>>();
 
         Ok(maybe_camera_controls)
@@ -421,7 +431,7 @@ impl CallbackCamera {
             .lock()
             .map_err(|why| NokhwaError::SetPropertyError {
                 property: "Camera Control".to_string(),
-                value: format!("{}: {}", id, control),
+                value: format!("{id}: {control}"),
                 error: why.to_string(),
             })?
             .set_camera_control(id, control)
@@ -453,7 +463,7 @@ impl CallbackCamera {
             let last_frame = self.last_frame_captured.clone();
             let callback = self.frame_callback.clone();
             let handle = std::thread::spawn(move || {
-                camera_frame_thread_loop(camera_clone, callback, last_frame, die_bool_clone)
+                camera_frame_thread_loop(camera_clone, callback, last_frame, die_bool_clone);
             });
             *handle_lock = Some(handle);
             Ok(())
@@ -465,6 +475,8 @@ impl CallbackCamera {
     }
 
     /// Sets the frame callback to the new specified function. This function will be called instead of the previous one(s).
+    /// # Errors
+    /// If the callback cannot be set, this will error.
     pub fn set_callback(
         &mut self,
         callback: impl FnMut(FrameBuffer) + Send + 'static,
@@ -496,6 +508,8 @@ impl CallbackCamera {
     }
 
     /// Gets the last frame captured by the camera.
+    /// # Errors
+    /// This will error if there is no last frame yet
     pub fn last_frame(&self) -> Result<FrameBuffer, NokhwaError> {
         Ok(self
             .last_frame_captured
@@ -505,6 +519,8 @@ impl CallbackCamera {
     }
 
     /// Checks if stream if open. If it is, it will return true.
+    /// # Errors
+    /// This will error if the camera fails to check if the stream is open.
     pub fn is_stream_open(&self) -> Result<bool, NokhwaError> {
         Ok(self
             .camera
@@ -534,6 +550,7 @@ impl Drop for CallbackCamera {
     }
 }
 
+#[allow(clippy::needless_pass_by_value)]
 fn camera_frame_thread_loop(
     camera: AtomicLock<Camera>,
     frame_callback: HeldCallbackType,

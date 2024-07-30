@@ -135,8 +135,3 @@ fn query_wasm() -> Result<Vec<CameraInfo>, NokhwaError> {
 
     block_on(query_js_cameras())
 }
-
-#[cfg(not(feature = "input-jscam"))]
-fn query_wasm() -> Result<Vec<CameraInfo>, NokhwaError> {
-    Err(NokhwaError::UnsupportedOperationError(ApiBackend::Browser))
-}

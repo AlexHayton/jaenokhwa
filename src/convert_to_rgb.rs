@@ -39,16 +39,15 @@ impl ConvertToRgb for FrameBuffer {
                 let mut input_buffer = Video::new(pixel_format, self.width(), self.height());
 
                 // Calculate expected buffer size (4 bytes per 2 pixels)
-                let expected_size = (width * height * 2) as usize;
+                let expected_size = width * height * 2;
 
                 // Check if the buffer size matches the expected size
-                if buffer.len() != expected_size {
-                    panic!(
-                        "Buffer size does not match expected size of {}... It is {}",
-                        expected_size,
-                        buffer.len(),
-                    );
-                }
+                assert!(
+                    buffer.len() != expected_size,
+                    "Buffer size does not match expected size of {}... It is {}",
+                    expected_size,
+                    buffer.len(),
+                );
 
                 // Copy the buffer directly into the Video object
                 input_buffer.data_mut(0).copy_from_slice(buffer);
@@ -59,7 +58,7 @@ impl ConvertToRgb for FrameBuffer {
                 return output_buffer.data(0).to_vec();
             }
             Err(e) => {
-                panic!("Error creating scaler: {}", e);
+                panic!("Error creating scaler: {e}");
             }
         }
     }

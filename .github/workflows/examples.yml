@@ -5,7 +5,7 @@
 # For multi-OS testing see the `cross.yml` workflow.
 
 on:
-  pull_request: {}
+  push: {}
     
 
 name: Compile all examples
@@ -15,7 +15,6 @@ jobs:
   compile_examples:
     strategy:
         matrix:
-          example: [convert-to-rgb, threaded-capture, capture]
           os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
@@ -23,8 +22,8 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Checkout sources
         uses: actions/checkout@v2
-
-      - name: Cargo Check
+      - name: Cargo clippy all projects
         run: |
-          cd examples/threaded-capture
-          cargo check
+          ./clippy-all
+
+    

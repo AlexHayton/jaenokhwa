@@ -41,7 +41,7 @@ impl FrameBuffer {
     pub fn new(resolution: Resolution, buffer: &[u8], source_frame_format: FourCC, timestamp: time::Instant) -> Self {
         Self {
             timestamp,
-            resolution: resolution,
+            resolution,
             buffer: Bytes::copy_from_slice(buffer),
             source_frame_format,
         }

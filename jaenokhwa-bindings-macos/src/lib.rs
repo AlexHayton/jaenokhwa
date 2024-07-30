@@ -109,7 +109,7 @@ mod internal {
 
                         // Capture the bytes from the buffer
                         let buffer_as_vec = unsafe {
-                            std::slice::from_raw_parts_mut(base_address as *mut u8, buffer_length as usize)
+                            std::slice::from_raw_parts_mut(base_address as *mut u8, buffer_length)
                                 .to_vec()
                         };
 
@@ -121,7 +121,7 @@ mod internal {
                                     Arc::from_raw(ptr)
                                 };
                         let framebuffer = FrameBuffer::new(Resolution::new(width as u32, height as u32), &buffer_as_vec, raw_fcc_to_fourcc(pixel_format), Instant::now());
-                        if let Err(_) = sender.send(framebuffer) {
+                        if sender.send(framebuffer).is_err() {
                             return;
                         }
                         std::mem::forget(sender);
@@ -165,12 +165,12 @@ mod internal {
     impl AVCaptureDelegate {
         pub fn set_sender(&mut self, sender: Arc<SenderType>) -> bool {
             let raw_sender = Arc::into_raw(sender) as *const c_void;
-            return unsafe { msg_send![self, setSender: raw_sender] };
+            unsafe { msg_send![self, setSender: raw_sender] }
         }
     }
 
     pub fn query_avfoundation() -> Result<Vec<CameraInfo>, NokhwaError> {
-        #[cfg(any(target_os = "macos"))]
+        #[cfg(target_os = "macos")]
         let device_types: Vec<&AVCaptureDeviceType> = unsafe {
             vec![
                 AVCaptureDeviceTypeBuiltInWideAngleCamera,
@@ -180,7 +180,7 @@ mod internal {
             ]
         };
 
-        #[cfg(any(target_os = "ios"))]
+        #[cfg(target_os = "ios")]
         let device_types: Vec<&AVCaptureDeviceType> = unsafe {
             vec![
                 AVCaptureDeviceTypeBuiltInUltraWideCamera,
@@ -248,7 +248,7 @@ mod internal {
         }
 
         pub fn from_unique_id(unique_id: &str) -> Result<Self, NokhwaError> {
-            let binding = NSString::from_str(&unique_id.to_string());
+            let binding = NSString::from_str(unique_id);
             let nsstr_id = binding.as_ref();
             let device_option =
                 av_foundation::capture_device::AVCaptureDevice::device_with_unique_id(nsstr_id);
@@ -280,6 +280,7 @@ mod internal {
         pub fn supported_formats(&self) -> Result<Vec<CameraFormat>, NokhwaError> {
             println!("Formats {:?}", self.inner.formats());
 
+            #[allow(clippy::useless_conversion)]
             Ok(self
                 .inner
                 .formats()
@@ -318,21 +319,21 @@ mod internal {
             match result {
                 Ok(accepted) => {
                     if accepted {
-                        return Ok(());
+                        Ok(())
                     } else {
-                        return Err(NokhwaError::SetPropertyError {
+                        Err(NokhwaError::SetPropertyError {
                             property: "lockForConfiguration".to_string(),
                             value: "Locked".to_string(),
                             error: "Lock Rejected".to_string(),
-                        });
+                        })
                     }
                 }
                 Err(_) => {
-                    return Err(NokhwaError::SetPropertyError {
+                    Err(NokhwaError::SetPropertyError {
                         property: "lockForConfiguration".to_string(),
                         value: "Locked".to_string(),
                         error: "Cannot lock for configuration".to_string(),
-                    });
+                    })
                 }
             }
         }
@@ -1234,11 +1235,11 @@ mod internal {
                 }
             }
 
-            return Err(NokhwaError::SetPropertyError {
+            Err(NokhwaError::SetPropertyError {
                 property: id.to_string(),
                 value: value.to_string(),
                 error: "Control not supported".to_string(),
-            });
+            })
         }
 
         pub fn active_format(&self) -> Result<CameraFormat, NokhwaError> {
@@ -1257,9 +1258,9 @@ mod internal {
                     CameraFormat::new(resolution, fourcc, fps)
                 })
                 .collect::<Vec<_>>();
-            a.sort_by(|a, b| a.frame_rate().cmp(&b.frame_rate()));
+            a.sort_by_key(|a| a.frame_rate());
 
-            if a.len() != 0 {
+            if a.is_empty() {
                 Ok(a[a.len() - 1])
             } else {
                 Err(NokhwaError::GetPropertyError {

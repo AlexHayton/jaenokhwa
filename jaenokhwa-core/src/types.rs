@@ -958,16 +958,6 @@ impl Display for ControlValueDescription {
     }
 }
 
-// fn step_chk(val: i64, default: i64, step: i64) -> Result<(), NokhwaError> {
-//     if (val - default) % step != 0 {
-//         return Err(NokhwaError::StructureError {
-//             structure: "Value".to_string(),
-//             error: "Doesnt fit step".to_string(),
-//         });
-//     }
-//     Ok(())
-// }
-
 /// This struct tells you everything about a particular [`KnownCameraControl`].
 ///
 /// However, you should never need to instantiate this struct, since its usually generated for you by `jaenokhwa`.
