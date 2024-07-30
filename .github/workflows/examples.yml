@@ -29,9 +29,14 @@ jobs:
       - uses: ilammy/setup-nasm@v1
       - name: Checkout sources
         uses: actions/checkout@v2
+      
+      - name: Install alsa-tools (ubuntu only)
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get install alsa-tools
       - name: Set MSVC target (windows only)
         if: matrix.os == 'windows-latest'
         run: bash ./scripts/set-windows-msvc.sh
+        
       - name: Build example
         working-directory: examples/${{ matrix.example }}
         run: cargo build
