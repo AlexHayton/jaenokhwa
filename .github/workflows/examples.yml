@@ -28,10 +28,10 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v2
       - name: Build example
-        working-directory: examples/{{ matrix.example }}
+        working-directory: examples/${{ matrix.example }}
         run: cargo build
       - name: Clippy example
-        working-directory: examples/{{ matrix.example }}
+        working-directory: examples/${{ matrix.example }}
         run: cargo clippy
 
     
