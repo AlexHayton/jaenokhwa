@@ -27,6 +27,6 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v2
       - name: Cargo clippy all projects
-        run: bash ./scripts/clippy-all
+        run: bash ./scripts/clippy-all.sh
 
     
