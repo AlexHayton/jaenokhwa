@@ -1,7 +1,10 @@
 #!/bin/bash
 
+# List the directories, jaenokhwa-core etc
+project_dirs=("jaenokhwa-core" "jaenokhwa-bindings-linux" "jaenokhwa-bindings-macos" "jaenokhwa-bindings-windows")
+
 # Loop through each project directory
-for project_dir in $(find . -type d -not -path "./examples/*" -name "Cargo.toml" -exec dirname {} \;); do
+for project in project_dirs; do
     # Change to the project directory
     cd "$project_dir"
 
@@ -9,5 +12,5 @@ for project_dir in $(find . -type d -not -path "./examples/*" -name "Cargo.toml"
     cargo publish
 
     # Change back to the original directory
-    cd "$current_dir"
+    cd ..
 done
