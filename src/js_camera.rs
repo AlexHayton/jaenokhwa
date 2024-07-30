@@ -23,7 +23,7 @@
 
 use image::{buffer::ConvertBuffer, ImageBuffer, Rgb, RgbImage, Rgba};
 use js_sys::{Array, JsString, Map, Object, Promise};
-use nokhwa_core::{
+use jaenokhwa_core::{
     error::NokhwaError,
     types::{CameraIndex, CameraInfo, Resolution},
 };

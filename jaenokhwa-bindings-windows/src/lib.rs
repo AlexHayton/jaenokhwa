@@ -31,9 +31,9 @@
 #[cfg(all(windows, not(feature = "docs-only")))]
 pub mod wmf {
     use four_cc::FourCC;
-    use nokhwa_core::error::NokhwaError;
-    use nokhwa_core::pixel_format;
-    use nokhwa_core::types::{
+    use jaenokhwa_core::error::NokhwaError;
+    use jaenokhwa_core::pixel_format;
+    use jaenokhwa_core::types::{
         ApiBackend, CameraControl, CameraFormat, CameraIndex, CameraInfo, ControlValueDescription,
         ControlValueSetter, KnownCameraControl, KnownCameraControlFlag, Resolution,
     };

@@ -17,7 +17,7 @@
 #[cfg(target_os = "linux")]
 mod internal {
     use four_cc::FourCC;
-    use nokhwa_core::{
+    use jaenokhwa_core::{
         buffer::FrameBuffer,
         error::NokhwaError,
         traits::CaptureBackendTrait,

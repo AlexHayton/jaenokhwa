@@ -23,6 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: jwlawson/actions-setup-cmake@v2
       - name: Checkout sources
         uses: actions/checkout@v2
       - name: Cargo build main project (Default features)

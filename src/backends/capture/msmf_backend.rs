@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 use four_cc::FourCC;
-use nokhwa_bindings_windows::wmf::MediaFoundationDevice;
-use nokhwa_core::{
+use jaenokhwa_bindings_windows::wmf::MediaFoundationDevice;
+use jaenokhwa_core::{
     buffer::FrameBuffer,
     error::NokhwaError,
     traits::CaptureBackendTrait,
