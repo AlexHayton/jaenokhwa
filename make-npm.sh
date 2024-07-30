@@ -17,5 +17,5 @@
 # limitations under the License.
 #
 
-wasm-pack build --release --target web -- --features "input-jscam, output-wasm, small-wasm, test-fail-warning" --no-default-features
+wasm-pack build --release --target web -- --features "input-jscam, output-wasm, test-fail-warning" --no-default-features
 mv pkg/jaenokhwa* jaenokhwajs/

@@ -27,11 +27,10 @@ use ggez::{
     graphics::{Canvas, Image},
     Context, ContextBuilder, GameError,
 };
+use jaenokhwa::query_devices;
 use jaenokhwa::{
     buffer::FrameBuffer,
-    native_api_backend,
     pixel_format::{MJPEG, NV12, YUYV},
-    query,
     utils::{CameraFormat, CameraIndex, RequestedFormat, RequestedFormatType, Resolution},
     CallbackCamera, Camera,
 };
@@ -283,8 +282,7 @@ fn nokhwa_main() {
 
     match cmd {
         CommandsProper::ListDevices => {
-            let backend = native_api_backend().unwrap();
-            let devices = query(backend).unwrap();
+            let devices = query_devices().unwrap();
             println!("There are {} available cameras.", devices.len());
             for device in devices {
                 println!("{device}");

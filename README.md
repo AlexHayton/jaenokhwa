@@ -19,7 +19,7 @@ Most likely, you will only use functionality provided by the `Camera` struct. If
 
 ## Example
 ```rust
-let cameras = jaenokhwa::query::query_devices();
+let cameras = query_devices();
 let index = CameraIndex::Index(cameras[0].unique_id()); 
 // Use the string to specify a unique camera ID
 
