@@ -83,7 +83,7 @@ pub fn query_devices() -> Result<Vec<CameraInfo>, NokhwaError> {
 
 #[cfg(all(feature = "input-v4l", target_os = "linux"))]
 fn query_v4l() -> Result<Vec<CameraInfo>, NokhwaError> {
-    nokhwa_bindings_linux::query()
+    jaenokhwa_bindings_linux::query()
 }
 
 #[cfg(any(not(feature = "input-v4l"), not(target_os = "linux")))]
@@ -96,7 +96,7 @@ fn query_v4l() -> Result<Vec<CameraInfo>, NokhwaError> {
 // please refer to https://docs.microsoft.com/en-us/windows/win32/medfound/enumerating-video-capture-devices
 #[cfg(all(feature = "input-msmf", target_os = "windows"))]
 fn query_msmf() -> Result<Vec<CameraInfo>, NokhwaError> {
-    nokhwa_bindings_windows::wmf::query_media_foundation_descriptors()
+    jaenokhwa_bindings_windows::wmf::query_media_foundation_descriptors()
 }
 
 #[cfg(any(not(feature = "input-msmf"), not(target_os = "windows")))]
