@@ -9,6 +9,8 @@ description = "The Windows Media Foundation bindings crate for `nokhwa`"
 keywords = ["media-foundation", "windows", "capture", "webcam"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+docs-only = []
 
 [dependencies]
 four-cc = "0.4.0"
