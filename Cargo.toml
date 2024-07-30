@@ -44,7 +44,7 @@ ffmpeg-sys-next = { git = "https://github.com/AlexHayton/rust-ffmpeg-sys.git" }
 four-cc = { git = "https://github.com/AlexHayton/four-cc.git" }
 core-video = { git = "https://github.com/AlexHayton/core-video-rs.git" }
 av-foundation = { git = "https://github.com/AlexHayton/av-foundation-rs.git" }
-rust-ffmpeg-sys = { git = "https://github.com/WilliamVenner/rust-ffmpeg-sys.git"}
+rust-ffmpeg-sys = { git = "https://github.com/WilliamVenner/rust-ffmpeg-sys.git", branch = "mingw-build-ffmpeg" }
 
 [dependencies.jaenokhwa-core]
 version = "0.1.0"
