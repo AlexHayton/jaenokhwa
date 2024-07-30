@@ -13,7 +13,7 @@ repository = "https://github.com/AlexHayton/jaenokhwa"
 default = []
 serialize = ["serde"]
 docs-features = ["serialize"]
-test-fail-warnings = []
+test-fail-warning = []
 
 [dependencies]
 thiserror = "1.0"
