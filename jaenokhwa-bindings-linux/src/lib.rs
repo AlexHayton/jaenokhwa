@@ -748,6 +748,7 @@ mod internal {
                 cam_fmt.resolution(),
                 &raw_frame,
                 cam_fmt.format(),
+                Instant::now(),
             ))
         }
 
