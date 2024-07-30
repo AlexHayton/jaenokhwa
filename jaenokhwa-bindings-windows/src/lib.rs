@@ -1162,6 +1162,7 @@ pub mod wmf {
     impl Drop for MediaFoundationDevice {
         fn drop(&mut self) {
             // swallow errors
+            #[allow(clippy::needless_if)]
             unsafe {
                 if self
                     .source_reader
