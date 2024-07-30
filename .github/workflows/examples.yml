@@ -14,8 +14,9 @@ name: Compile all examples
 jobs:
   compile_examples:
     strategy:
-        matrix:
-          os: [ubuntu-latest, windows-latest, macos-latest]
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     defaults:
       run:
