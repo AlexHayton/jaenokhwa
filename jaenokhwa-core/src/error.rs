@@ -19,7 +19,6 @@ use crate::types::ApiBackend;
 use four_cc::FourCC;
 use thiserror::Error;
 
-/// All errors in `nokhwa`.
 #[allow(clippy::module_name_repetitions)]
 #[derive(Error, Debug, Clone)]
 pub enum NokhwaError {

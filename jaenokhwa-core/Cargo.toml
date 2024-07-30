@@ -1,12 +1,12 @@
 [package]
 name = "jaenokhwa-core"
 version = "0.1.0"
-authors = ["l1npengtul <l1npengtul@protonmail.com>"]
+authors = ["Alex Hayton", "l1npengtul <l1npengtul@protonmail.com>", "The Jaenokhwa Contributors"]
 edition = "2021"
-description = "Core type definitions for nokhwa"
+description = "Core type definitions for jaenokhwa"
 keywords = ["camera", "webcam", "capture", "cross-platform"]
 license = "Apache-2.0"
-repository = "https://github.com/l1npengtul/nokhwa"
+repository = "https://github.com/AlexHayton/jaenokhwa"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]

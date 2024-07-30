@@ -19,8 +19,8 @@
  */
 #![cfg_attr(feature = "test-fail-warning", deny(warnings))]
 #![cfg_attr(feature = "docs-features", feature(doc_cfg))]
-//! # nokhwa
-//! A Simple-to-use, cross-platform Rust Webcam Capture Library
+//! # jaenokhwa
+//! An easy-to-use, cross-platform Rust Webcam Capture Library
 //!
 //! The raw backends can be found in [`backends`](crate::backends)
 //!
@@ -39,7 +39,7 @@ mod camera;
 #[cfg_attr(feature = "docs-features", doc(cfg(feature = "input-jscam")))]
 pub mod js_camera;
 
-mod query;
+pub mod query;
 /// A camera that runs in a different thread and can call your code based on callbacks.
 #[cfg(feature = "output-threaded")]
 #[cfg_attr(feature = "docs-features", doc(cfg(feature = "output-threaded")))]
@@ -51,29 +51,28 @@ pub mod threaded;
 pub mod convert_to_rgb;
 
 pub use camera::Camera;
-pub use nokhwa_core::buffer::FrameBuffer;
-pub use nokhwa_core::error::NokhwaError;
+pub use jaenokhwa_core::{buffer::FrameBuffer, error::NokhwaError};
 pub use query::*;
 #[cfg(feature = "output-threaded")]
 #[cfg_attr(feature = "docs-features", doc(cfg(feature = "output-threaded")))]
 pub use threaded::CallbackCamera;
 
 pub mod utils {
-    pub use nokhwa_core::types::*;
+    pub use jaenokhwa_core::types::*;
 }
 
 pub mod error {
-    pub use nokhwa_core::error::NokhwaError;
+    pub use jaenokhwa_core::error::NokhwaError;
 }
 
 pub mod camera_traits {
-    pub use nokhwa_core::traits::*;
+    pub use jaenokhwa_core::traits::*;
 }
 
 pub mod pixel_format {
-    pub use nokhwa_core::pixel_format::*;
+    pub use jaenokhwa_core::pixel_format::*;
 }
 
 pub mod buffer {
-    pub use nokhwa_core::buffer::*;
+    pub use jaenokhwa_core::buffer::*;
 }

@@ -19,7 +19,7 @@
  * limitations under the License.
  */
 
-//! Core type definitions for `nokhwa`
+//! Core type definitions for `jaenokhwa`
 pub mod buffer;
 pub mod error;
 pub mod pixel_format;

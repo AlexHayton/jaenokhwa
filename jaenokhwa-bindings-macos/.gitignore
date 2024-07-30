@@ -56,7 +56,7 @@ out/
 # JIRA plugin
 atlassian-ide-plugin.xml
 
-nokhwa-bindings-macos.iml
+jaenokhwa-bindings-macos.iml
 # Cursive Clojure plugin
 .idea/replstate.xml
 

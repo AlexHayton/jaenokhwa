@@ -3,8 +3,8 @@ use ffmpeg_next::{
     frame::Video,
     software::scaling::{Context, Flags},
 };
-use nokhwa_core::buffer::FrameBuffer;
-use nokhwa_core::pixel_format::{UYVY_APPLE, YUV420};
+use jaenokhwa_core::buffer::FrameBuffer;
+use jaenokhwa_core::pixel_format::{UYVY_APPLE, YUV420};
 
 pub trait ConvertToRgb {
     fn convert_to_rgb(&self, _output_format: Pixel) -> Vec<u8> {

@@ -17,13 +17,13 @@
 #[cfg(target_os = "macos")]
 use flume::{Receiver, Sender};
 use four_cc::FourCC;
-use nokhwa_bindings_macos::AVCaptureVideoDataOutputSampleBufferDelegate;
+use jaenokhwa_bindings_macos::AVCaptureVideoDataOutputSampleBufferDelegate;
 #[cfg(target_os = "macos")]
-use nokhwa_bindings_macos::{
+use jaenokhwa_bindings_macos::{
     AVCaptureDelegate, AVCaptureDeviceInput, AVCaptureDeviceWrapper, AVCaptureSession,
     AVCaptureVideoDataOutput, ProtocolObject, Queue, QueueAttribute, Retained,
 };
-use nokhwa_core::{
+use jaenokhwa_core::{
     buffer::FrameBuffer,
     error::NokhwaError,
     traits::CaptureBackendTrait,

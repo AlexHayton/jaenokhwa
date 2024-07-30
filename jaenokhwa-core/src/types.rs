@@ -970,7 +970,7 @@ impl Display for ControlValueDescription {
 
 /// This struct tells you everything about a particular [`KnownCameraControl`].
 ///
-/// However, you should never need to instantiate this struct, since its usually generated for you by `nokhwa`.
+/// However, you should never need to instantiate this struct, since its usually generated for you by `jaenokhwa`.
 /// The only time you should be modifying this struct is when you need to set a value and pass it back to the camera.
 /// NOTE: Assume the values for `min` and `max` as **non-inclusive**!.
 /// E.g. if the [`CameraControl`] says `min` is 100, the minimum is actually 101.

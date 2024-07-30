@@ -17,7 +17,7 @@
 
 use crate::Camera;
 use four_cc::FourCC;
-use nokhwa_core::{
+use jaenokhwa_core::{
     buffer::FrameBuffer,
     error::NokhwaError,
     pixel_format::GRAY,

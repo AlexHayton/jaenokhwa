@@ -2,16 +2,16 @@
 name = "jaenokhwa-bindings-macos"
 version = "0.2.0"
 edition = "2021"
-authors = ["l1npengtul"]
+authors = ["Alex Hayton", "l1npengtul <l1npengtul@protonmail.com>", "The Jaenokhwa Contributors"]
 license = "Apache-2.0"
-repository = "https://github.com/l1npengtul/nokhwa"
+repository = "https://github.com/AlexHayton/jaenokhwa"
 description = "The AVFoundation bindings crate for `nokhwa`"
 keywords = ["avfoundation", "macos", "capture", "webcam"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies.jaenokhwa-core]
 version = "0.1.0"
-path = "../nokhwa-core"
+path = "../jaenokhwa-core"
 
 [dependencies]
 four-cc = "0.4.0"

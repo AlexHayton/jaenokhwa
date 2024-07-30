@@ -1,4 +1,5 @@
 /*
+ * Copyright 2024 Alex Hayton / The Jaenokhwa Contributors
  * Copyright 2022 l1npengtul <l1npengtul@protonmail.com> / The Nokhwa Contributors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,7 +15,7 @@
  * limitations under the License.
  */
 
-use nokhwa_core::{
+use jaenokhwa_core::{
     error::NokhwaError,
     types::{ApiBackend, CameraInfo},
 };
@@ -40,7 +41,6 @@ pub fn native_api_backend() -> Option<ApiBackend> {
 /// If you use an unsupported API (check the README or crate root for more info), incompatible backend for current platform, incompatible platform, or insufficient permissions, etc
 /// this will error.
 pub fn query_devices() -> Result<Vec<CameraInfo>, NokhwaError> {
-    // determine platform
     match std::env::consts::OS {
         "linux" => {
             if cfg!(feature = "input-v4l") && cfg!(target_os = "linux") {
@@ -111,7 +111,7 @@ fn query_msmf() -> Result<Vec<CameraInfo>, NokhwaError> {
     any(target_os = "macos", target_os = "ios")
 ))]
 fn query_avfoundation() -> Result<Vec<CameraInfo>, NokhwaError> {
-    use nokhwa_bindings_macos::query_avfoundation;
+    use jaenokhwa_bindings_macos::query_avfoundation;
 
     Ok(query_avfoundation()?
         .into_iter()

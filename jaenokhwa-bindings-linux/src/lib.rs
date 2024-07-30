@@ -775,12 +775,14 @@ mod internal {
 #[cfg(not(target_os = "linux"))]
 mod internal {
     use four_cc::FourCC;
-    use nokhwa_core::buffer::FrameBuffer;
-    use nokhwa_core::error::NokhwaError;
-    use nokhwa_core::traits::CaptureBackendTrait;
-    use nokhwa_core::types::{
-        ApiBackend, CameraControl, CameraFormat, CameraIndex, CameraInfo, ControlValueSetter,
-        KnownCameraControl, RequestedFormat, Resolution,
+    use jaenokhwa_core::{
+        buffer::FrameBuffer,
+        error::NokhwaError,
+        traits::CaptureBackendTrait,
+        types::{
+            ApiBackend, CameraControl, CameraFormat, CameraIndex, CameraInfo, ControlValueSetter,
+            KnownCameraControl, RequestedFormat, Resolution,
+        },
     };
     use std::borrow::Cow;
     use std::collections::HashMap;
