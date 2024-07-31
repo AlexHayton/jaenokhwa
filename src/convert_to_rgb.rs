@@ -3,10 +3,9 @@ use ffmpeg_next::{
     frame::Video,
     software::scaling::{Context, Flags},
 };
-use jaenokhwa_core::pixel_format::{UYVY, UYVY_APPLE, YUV420, YUV420V, YUYV};
 use jaenokhwa_core::{
     buffer::FrameBuffer,
-    pixel_format::{GRAY, MJPEG, NV12, RAWRGB},
+    pixel_format::{GRAY, MJPEG, NV12, RAWRGB, UYVY, UYVY_APPLE, YUV420V, YUYV},
 };
 
 pub trait ConvertToRgb {
@@ -18,7 +17,7 @@ pub trait ConvertToRgb {
 impl ConvertToRgb for FrameBuffer {
     fn convert_to_rgb(&self, output_format: Pixel) -> Vec<u8> {
         if self.source_frame_format() == MJPEG {
-            panic!("MJPEG format is not supported");
+            panic!("MJPEG format is not supported, yet");
         }
 
         if self.source_frame_format() == RAWRGB {
