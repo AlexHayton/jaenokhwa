@@ -26,7 +26,7 @@ use jaenokhwa_core::{
         Resolution,
     },
 };
-use std::{borrow::Cow, collections::HashMap};
+use std::{borrow::Cow, collections::HashMap, time::Instant};
 
 /// The backend that deals with Media Foundation on Windows.
 /// To see what this does, please see [`CaptureBackendTrait`].
@@ -252,6 +252,7 @@ impl CaptureBackendTrait for MediaFoundationCaptureDevice {
             self_ctrl.resolution(),
             &self.inner.raw_bytes()?,
             self_ctrl.format(),
+            Instant::now(),
         ))
     }
 

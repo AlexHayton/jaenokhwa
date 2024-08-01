@@ -35,10 +35,11 @@ jobs:
         if: matrix.os == 'windows-latest'
         uses: msys2/setup-msys2@v2
         with:
-          msystem: UCRT64
+          msystem: MINGW64
           update: true
           install: >-
             clang
+            mingw
 
       - name: Cargo build main project (Default features)
         run: cargo build
