@@ -16,9 +16,7 @@ pub trait ConvertToRgb {
 
 impl ConvertToRgb for FrameBuffer {
     fn convert_to_rgb(&self, output_format: Pixel) -> Vec<u8> {
-        if self.source_frame_format() == MJPEG {
-            panic!("MJPEG format is not supported, yet");
-        }
+        assert!((self.source_frame_format() != MJPEG), "MJPEG format is not supported, yet");
 
         if self.source_frame_format() == RAWRGB {
             return self.buffer().to_vec();
@@ -26,10 +24,9 @@ impl ConvertToRgb for FrameBuffer {
 
         let pixel_format = match self.source_frame_format() {
             YUV420V => Pixel::YUV420P,
-            UYVY_APPLE => Pixel::UYVY422,
+            UYVY_APPLE | UYVY => Pixel::UYVY422,
             NV12 => Pixel::NV12,
             YUYV => Pixel::YUYV422,
-            UYVY => Pixel::UYVY422,
             GRAY => Pixel::GRAY8,
             _ => panic!("Unsupported pixel format {}", self.source_frame_format()),
         };
