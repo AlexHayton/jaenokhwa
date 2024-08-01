@@ -41,7 +41,6 @@ jobs:
           update: true
           install: >-
             clang
-            mingw
             nasm
         
       - name: Build example

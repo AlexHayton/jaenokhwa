@@ -39,7 +39,6 @@ jobs:
           update: true
           install: >-
             clang
-            mingw
             nasm
 
       - name: Cargo build main project (Default features)
