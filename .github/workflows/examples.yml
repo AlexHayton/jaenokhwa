@@ -37,10 +37,12 @@ jobs:
         if: matrix.os == 'windows-latest'
         uses: msys2/setup-msys2@v2
         with:
-          msystem: UCRT64
+          msystem: MINGW64
           update: true
           install: >-
             clang
+            mingw
+            nasm
         
       - name: Build example
         working-directory: examples/${{ matrix.example }}

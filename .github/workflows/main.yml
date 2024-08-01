@@ -40,6 +40,7 @@ jobs:
           install: >-
             clang
             mingw
+            nasm
 
       - name: Cargo build main project (Default features)
         run: cargo build
