@@ -20,7 +20,7 @@ crate-type = ["cdylib", "rlib"]
 
 [features]
 default = ["flume", "input-native", "output-convert-to-rgb"]
-serialize = ["serde", "jaenokhwa-core/serialize", "four-cc/serde"]
+serialize = ["serde", "jaenokhwa-core/serialize", "four-cc-nokhwa/serde"]
 input-avfoundation = ["jaenokhwa-bindings-macos"]
 input-msmf = ["jaenokhwa-bindings-windows"]
 input-v4l = ["jaenokhwa-bindings-linux"]
@@ -37,10 +37,13 @@ test-fail-warning = []
 [dependencies]
 thiserror = "1.0"
 paste = "1.0"
-four-cc = { git = "https://github.com/AlexHayton/four-cc.git", version = "0.4.0" }
+four-cc-nokhwa = "0.4.0"
 
 [patch.crates-io]
 ffmpeg-sys-next = { git = "https://github.com/AlexHayton/rust-ffmpeg-sys.git" }
+av-foundation = { git = "https://github.com/AlexHayton/apple-media-rs.git" }
+core-media = { git = "https://github.com/AlexHayton/apple-media-rs.git" }
+core-video = { git = "https://github.com/AlexHayton/apple-media-rs.git" }
 
 [dependencies.jaenokhwa-core]
 version = "0.1.0"

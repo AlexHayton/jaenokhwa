@@ -16,7 +16,7 @@
  */
 #[cfg(target_os = "macos")]
 use flume::{Receiver, Sender};
-use four_cc::FourCC;
+use four_cc_nokhwa::FourCC;
 use jaenokhwa_bindings_macos::AVCaptureVideoDataOutputSampleBufferDelegate;
 #[cfg(target_os = "macos")]
 use jaenokhwa_bindings_macos::{

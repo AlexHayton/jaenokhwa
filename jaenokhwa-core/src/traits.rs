@@ -23,7 +23,7 @@ use crate::{
         KnownCameraControl, Resolution,
     },
 };
-use four_cc::FourCC;
+use four_cc_nokhwa::FourCC;
 use std::{borrow::Cow, collections::HashMap};
 
 /// This trait is for any backend that allows you to grab and take frames from a camera.

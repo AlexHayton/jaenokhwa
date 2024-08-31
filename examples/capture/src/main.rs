@@ -20,7 +20,7 @@
 use clap::{Parser, Subcommand};
 use color_eyre::Report;
 use flume::Receiver;
-use four_cc::FourCC;
+use four_cc_nokhwa::FourCC;
 use ggez::graphics::ImageFormat;
 use ggez::{
     event::{run, EventHandler},

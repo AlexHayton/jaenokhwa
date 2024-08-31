@@ -19,7 +19,7 @@ use std::time;
 
 use crate::types::Resolution;
 use bytes::Bytes;
-use four_cc::FourCC;
+use four_cc_nokhwa::FourCC;
 
 /// A buffer returned by a camera to accommodate custom decoding.
 /// Contains information of Resolution, the buffer's [`FrameFormat`], and the buffer.

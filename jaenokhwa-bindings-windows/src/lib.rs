@@ -30,7 +30,7 @@
 
 #[cfg(all(windows, not(feature = "docs-only")))]
 pub mod wmf {
-    use four_cc::FourCC;
+    use four_cc_nokhwa::FourCC;
     use jaenokhwa_core::error::NokhwaError;
     use jaenokhwa_core::pixel_format;
     use jaenokhwa_core::types::{

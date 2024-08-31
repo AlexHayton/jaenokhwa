@@ -1,5 +1,5 @@
 use crate::{error::NokhwaError, pixel_format::MJPEG};
-use four_cc::FourCC;
+use four_cc_nokhwa::FourCC;
 #[cfg(feature = "serialize")]
 use serde::{Deserialize, Serialize};
 use std::{

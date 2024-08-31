@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-use four_cc::FourCC;
+use four_cc_nokhwa::FourCC;
 use jaenokhwa_bindings_windows::wmf::MediaFoundationDevice;
 use jaenokhwa_core::{
     buffer::FrameBuffer,

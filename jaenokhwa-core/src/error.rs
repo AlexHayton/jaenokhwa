@@ -16,7 +16,7 @@
  */
 
 use crate::types::ApiBackend;
-use four_cc::FourCC;
+use four_cc_nokhwa::FourCC;
 use thiserror::Error;
 
 #[allow(clippy::module_name_repetitions)]

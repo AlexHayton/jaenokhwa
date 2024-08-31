@@ -16,7 +16,7 @@
  */
 #[cfg(target_os = "linux")]
 mod internal {
-    use four_cc::FourCC;
+    use four_cc_nokhwa::FourCC;
     use jaenokhwa_core::{
         buffer::FrameBuffer,
         error::NokhwaError,
@@ -776,7 +776,7 @@ mod internal {
 
 #[cfg(not(target_os = "linux"))]
 mod internal {
-    use four_cc::FourCC;
+    use four_cc_nokhwa::FourCC;
     use jaenokhwa_core::{
         buffer::FrameBuffer,
         error::NokhwaError,

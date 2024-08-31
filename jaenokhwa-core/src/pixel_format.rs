@@ -1,4 +1,4 @@
-use four_cc::FourCC;
+use four_cc_nokhwa::FourCC;
 
 pub const YUV420V: FourCC = FourCC(*b"420v");
 pub const MJPEG: FourCC = FourCC(*b"mjpg");

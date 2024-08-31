@@ -14,14 +14,14 @@ version = "0.1.0"
 path = "../jaenokhwa-core"
 
 [dependencies]
-four-cc = { git = "https://github.com/AlexHayton/four-cc.git", version = "0.4.0" }
+four-cc-nokhwa = "0.4.0"
 
 [target.'cfg(any(target_os="macos",target_os="ios"))'.dependencies]
-av-foundation = { git = "https://github.com/AlexHayton/av-foundation-rs.git", version = "0.3.0" }
+av-foundation = "0.3.0"
 block = "0.1"
 core-foundation = { version = "0.9"}
 core-media = { version = "0.4", default-features = false, features = ["objc"] }
-core-video = { git = "https://github.com/AlexHayton/core-video-rs.git", version = "0.3.1", default-features = false, features = ["objc"] }
+core-video = { version = "0.3.1", default-features = false, features = ["objc"] }
 dispatch2 = "0.1.0"
 flume = "0.11.0"
 objc2 = "0.5.2"

@@ -47,7 +47,7 @@ mod internal {
     };
     use core_video::pixel_buffer::CVPixelBuffer;
     use flume::Sender;
-    use four_cc::FourCC;
+    use four_cc_nokhwa::FourCC;
     use jaenokhwa_core::{
         buffer::FrameBuffer,
         error::NokhwaError,
@@ -278,8 +278,6 @@ mod internal {
         }
 
         pub fn supported_formats(&self) -> Result<Vec<CameraFormat>, NokhwaError> {
-            println!("Formats {:?}", self.inner.formats());
-
             #[allow(clippy::useless_conversion)]
             Ok(self
                 .inner
@@ -1260,8 +1258,8 @@ mod internal {
                 .collect::<Vec<_>>();
             a.sort_by_key(|a| a.frame_rate());
 
-            if a.is_empty() {
-                Ok(a[a.len() - 1])
+            if !a.is_empty() {
+                Ok(*a.last().unwrap())
             } else {
                 Err(NokhwaError::GetPropertyError {
                     property: "activeFormat".to_string(),
