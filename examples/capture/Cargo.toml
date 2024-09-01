@@ -1,12 +1,12 @@
 [package]
-name = "nokhwactl"
+name = "jaenokhwactl"
 version = "0.10.0"
-authors = ["l1npengtul <l1npengtul@protonmail.com>", "The Nokhwa Contributors"]
+authors = ["Alex Hayton", "l1npengtul <l1npengtul@protonmail.com>", "The Jaenokhwa Contributors"]
 edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["nokhwa/default"]
+default = ["jaenokhwa/default"]
 
 [dependencies]
 four-cc = "0.4"
@@ -20,7 +20,7 @@ version = "4.0.20"
 features = ["derive"]
 
 # Use these as you need
-[dependencies.nokhwa]
+[dependencies.jaenokhwa]
 path = "../.."
 features = ["input-native", "output-threaded"]
 

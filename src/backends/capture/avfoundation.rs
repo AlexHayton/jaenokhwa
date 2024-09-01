@@ -1,4 +1,5 @@
 /*
+ * Copyright 2024 Alex Hayton / The Jaenokhwa Contributors
  * Copyright 2022 l1npengtul <l1npengtul@protonmail.com> / The Nokhwa Contributors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,13 +17,13 @@
 #[cfg(target_os = "macos")]
 use flume::{Receiver, Sender};
 use four_cc::FourCC;
-use nokhwa_bindings_macos::AVCaptureVideoDataOutputSampleBufferDelegate;
+use jaenokhwa_bindings_macos::AVCaptureVideoDataOutputSampleBufferDelegate;
 #[cfg(target_os = "macos")]
-use nokhwa_bindings_macos::{
+use jaenokhwa_bindings_macos::{
     AVCaptureDelegate, AVCaptureDeviceInput, AVCaptureDeviceWrapper, AVCaptureSession,
     AVCaptureVideoDataOutput, ProtocolObject, Queue, QueueAttribute, Retained,
 };
-use nokhwa_core::{
+use jaenokhwa_core::{
     buffer::FrameBuffer,
     error::NokhwaError,
     traits::CaptureBackendTrait,
@@ -77,7 +78,8 @@ impl AVFoundationCaptureDevice {
         device.set_all(camera_fmt)?;
 
         let device_descriptor = device.info().clone();
-        let buffername = format!("{}_INDEX{}_", device_descriptor, index);
+        let unique_id = device_descriptor.unique_id();
+        let buffername = format!("{unique_id}_INDEX{index}_");
 
         let (send, recv) = flume::unbounded();
         Ok(AVFoundationCaptureDevice {
@@ -236,7 +238,7 @@ impl CaptureBackendTrait for AVFoundationCaptureDevice {
     fn open_stream(&mut self) -> Result<(), NokhwaError> {
         self.refresh_camera_format()?;
 
-        let input = AVCaptureDeviceInput::from_device(&self.device.raw_device());
+        let input = AVCaptureDeviceInput::from_device(self.device.raw_device());
         match input {
             Ok(_) => {}
             Err(why) => {
@@ -317,34 +319,25 @@ impl CaptureBackendTrait for AVFoundationCaptureDevice {
             return Ok(());
         }
 
-        let session = match &self.session {
-            Some(session) => session,
-            None => {
-                return Err(NokhwaError::GetPropertyError {
-                    property: "AVCaptureSession".to_string(),
-                    error: "Doesnt Exist".to_string(),
-                })
-            }
+        let Some(session) = &self.session else {
+            return Err(NokhwaError::GetPropertyError {
+                property: "AVCaptureSession".to_string(),
+                error: "Doesn't Exist".to_string(),
+            });
         };
 
-        let output = match &self.data_out {
-            Some(output) => output,
-            None => {
-                return Err(NokhwaError::GetPropertyError {
-                    property: "AVCaptureVideoDataOutput".to_string(),
-                    error: "Doesnt Exist".to_string(),
-                })
-            }
+        let Some(output) = &self.data_out else {
+            return Err(NokhwaError::GetPropertyError {
+                property: "AVCaptureVideoDataOutput".to_string(),
+                error: "Doesn't Exist".to_string(),
+            });
         };
 
-        let input = match &self.dev_input {
-            Some(input) => input,
-            None => {
-                return Err(NokhwaError::GetPropertyError {
-                    property: "AVCaptureDeviceInput".to_string(),
-                    error: "Doesnt Exist".to_string(),
-                })
-            }
+        let Some(input) = &self.dev_input else {
+            return Err(NokhwaError::GetPropertyError {
+                property: "AVCaptureVideoDataOutput".to_string(),
+                error: "Doesn't Exist".to_string(),
+            });
         };
 
         session.remove_output(output);
@@ -364,7 +357,6 @@ impl CaptureBackendTrait for AVFoundationCaptureDevice {
 #[cfg(target_os = "macos")]
 impl Drop for AVFoundationCaptureDevice {
     fn drop(&mut self) {
-        if self.stop_stream().is_err() {}
         self.device.unlock();
     }
 }

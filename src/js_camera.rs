@@ -1,4 +1,5 @@
 /*
+ * Copyright 2024 Alex Hayton / The Jaenokhwa Contributors
  * Copyright 2022 l1npengtul <l1npengtul@protonmail.com> / The Nokhwa Contributors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,7 +23,7 @@
 
 use image::{buffer::ConvertBuffer, ImageBuffer, Rgb, RgbImage, Rgba};
 use js_sys::{Array, JsString, Map, Object, Promise};
-use nokhwa_core::{
+use jaenokhwa_core::{
     error::NokhwaError,
     types::{CameraIndex, CameraInfo, Resolution},
 };

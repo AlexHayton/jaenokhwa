@@ -1,4 +1,5 @@
 /*
+ * Copyright 2024 Alex Hayton / The Jaenokhwa Contributors
  * Copyright 2022 l1npengtul <l1npengtul@protonmail.com> / The Nokhwa Contributors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,11 +27,10 @@ use ggez::{
     graphics::{Canvas, Image},
     Context, ContextBuilder, GameError,
 };
-use nokhwa::{
+use jaenokhwa::query_devices;
+use jaenokhwa::{
     buffer::FrameBuffer,
-    native_api_backend,
     pixel_format::{MJPEG, NV12, YUYV},
-    query,
     utils::{CameraFormat, CameraIndex, RequestedFormat, RequestedFormatType, Resolution},
     CallbackCamera, Camera,
 };
@@ -57,7 +57,7 @@ impl EventHandler<GameError> for CaptureState {
             .map_err(|why| GameError::RenderError(why.to_string()))?;
         let image = Image::from_pixels(
             ctx,
-            &buffer.buffer(),
+            buffer.buffer(),
             ImageFormat::Rgba8Uint,
             self.format.width(),
             self.format.height(),
@@ -138,8 +138,8 @@ impl FromStr for RequestedCliFormat {
     type Err = Report;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let splitted = s.split(":").collect::<Vec<&str>>();
-        if splitted.len() == 0 {
+        let splitted = s.split(':').collect::<Vec<&str>>();
+        if splitted.is_empty() {
             return Err(Report::msg("empty string"));
         }
 
@@ -161,7 +161,7 @@ impl RequestedCliFormat {
             )),
             "HighestResolution" => {
                 let fmtv = self.format_option.unwrap();
-                let values = fmtv.split(",").collect::<Vec<&str>>();
+                let values = fmtv.split(',').collect::<Vec<&str>>();
                 let x = values[0].parse::<u32>().unwrap();
                 let y = values[1].parse::<u32>().unwrap();
                 let resolution = Resolution::new(x, y);
@@ -177,23 +177,9 @@ impl RequestedCliFormat {
                     fps,
                 )))
             }
-            "Exact" => {
-                let fmtv = self.format_option.unwrap();
-                let values = fmtv.split(",").collect::<Vec<&str>>();
-                let x = values[0].parse::<u32>().unwrap();
-                let y = values[1].parse::<u32>().unwrap();
-                let fps = values[2].parse::<u32>().unwrap();
-                let fourcc = values[3].parse::<FourCC>().unwrap();
-
-                let resolution = Resolution::new(x, y);
-                let camera_format = CameraFormat::new(resolution, fourcc, fps);
-                Some(RequestedFormat::new(RequestedFormatType::Closest(
-                    camera_format,
-                )))
-            }
             "Closest" => {
                 let fmtv = self.format_option.unwrap();
-                let values = fmtv.split(",").collect::<Vec<&str>>();
+                let values = fmtv.split(',').collect::<Vec<&str>>();
                 let x = values[0].parse::<u32>().unwrap();
                 let y = values[1].parse::<u32>().unwrap();
                 let fps = values[2].parse::<u32>().unwrap();
@@ -282,8 +268,7 @@ fn nokhwa_main() {
 
     match cmd {
         CommandsProper::ListDevices => {
-            let backend = native_api_backend().unwrap();
-            let devices = query(backend).unwrap();
+            let devices = query_devices().unwrap();
             println!("There are {} available cameras.", devices.len());
             for device in devices {
                 println!("{device}");
@@ -314,8 +299,7 @@ fn nokhwa_main() {
             display,
             requested,
         } => {
-            let requested = requested.as_ref().map(|x| x.clone().make_requested())
-                .flatten()
+            let requested = requested.as_ref().and_then(|x| x.clone().make_requested())
                 .expect("Expected AbsoluteHighestResolution, AbsoluteHighestFrameRate, HighestResolution, HighestFrameRate, Exact, Closest, or None");
 
             let index = match device.as_ref().unwrap_or(&IndexKind::Index(0)) {
@@ -341,10 +325,7 @@ fn nokhwa_main() {
                 let cb = ContextBuilder::new(&camera_info.name(), "Nokhwa");
                 let (ctx, el) = cb.build().unwrap();
 
-                let state = CaptureState {
-                    receiver,
-                    format,
-                };
+                let state = CaptureState { receiver, format };
 
                 run(ctx, el, state)
             } else {
@@ -354,6 +335,7 @@ fn nokhwa_main() {
                 .unwrap();
 
                 cb.open_stream().unwrap();
+                #[allow(clippy::empty_loop)]
                 loop {}
             }
         }
@@ -367,6 +349,7 @@ fn nokhwa_main() {
                 IndexKind::Index(i) => CameraIndex::Index(*i),
             };
 
+            #[allow(clippy::map_flatten)]
             let requested = requested.clone().map(|x| x.make_requested())
                 .flatten()
                 .expect("Expected AbsoluteHighestResolution, AbsoluteHighestFrameRate, HighestResolution, HighestFrameRate, Exact, Closest, or None");

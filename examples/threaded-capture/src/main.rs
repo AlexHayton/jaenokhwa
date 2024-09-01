@@ -1,4 +1,5 @@
 /*
+ * Copyright 2024 Alex Hayton / The Jaenokhwa Contributors
  * Copyright 2022 l1npengtul <l1npengtul@protonmail.com> / The Nokhwa Contributors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,29 +15,33 @@
  * limitations under the License.
  */
 
-use nokhwa::{
-    query,
-    utils::{ApiBackend, CameraIndex, RequestedFormat, RequestedFormatType},
+use jaenokhwa::{
+    query_devices,
+    utils::{CameraIndex, RequestedFormat, RequestedFormatType},
     CallbackCamera,
 };
 
 fn main() {
     // only needs to be run on OSX
-    let cameras = query(ApiBackend::Auto).unwrap();
+    let cameras = query_devices().unwrap();
     cameras.iter().for_each(|cam| println!("{:?}", cam));
 
     let format = RequestedFormat::new(RequestedFormatType::AbsoluteHighestFrameRate);
 
     let first_camera = cameras.first().unwrap();
 
-    let mut threaded = CallbackCamera::new(CameraIndex::String(first_camera.unique_id()).clone(), format, |framebuffer| {
-        println!(
-            "CALLBACK {}x{} {}",
-            framebuffer.resolution().width(),
-            framebuffer.resolution().height(),
-            framebuffer.buffer().len()
-        );
-    })
+    let mut threaded = CallbackCamera::new(
+        CameraIndex::String(first_camera.unique_id()).clone(),
+        format,
+        |framebuffer| {
+            println!(
+                "CALLBACK {}x{} {}",
+                framebuffer.resolution().width(),
+                framebuffer.resolution().height(),
+                framebuffer.buffer().len()
+            );
+        },
+    )
     .unwrap();
     threaded.open_stream().unwrap();
     #[allow(clippy::empty_loop)] // keep it running

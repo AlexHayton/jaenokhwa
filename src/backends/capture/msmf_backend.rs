@@ -1,4 +1,5 @@
 /*
+ * Copyright 2024 Alex Hayton / The Jaenokhwa Contributors
  * Copyright 2022 l1npengtul <l1npengtul@protonmail.com> / The Nokhwa Contributors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,8 +15,8 @@
  * limitations under the License.
  */
 use four_cc::FourCC;
-use nokhwa_bindings_windows::wmf::MediaFoundationDevice;
-use nokhwa_core::{
+use jaenokhwa_bindings_windows::wmf::MediaFoundationDevice;
+use jaenokhwa_core::{
     buffer::FrameBuffer,
     error::NokhwaError,
     traits::CaptureBackendTrait,
@@ -25,7 +26,7 @@ use nokhwa_core::{
         Resolution,
     },
 };
-use std::{borrow::Cow, collections::HashMap};
+use std::{borrow::Cow, collections::HashMap, time::Instant};
 
 /// The backend that deals with Media Foundation on Windows.
 /// To see what this does, please see [`CaptureBackendTrait`].
@@ -33,7 +34,7 @@ use std::{borrow::Cow, collections::HashMap};
 /// Note: This requires Windows 7 or newer to work.
 /// # Quirks
 /// - This does build on non-windows platforms, however when you do the backend will be empty and will return an error for any given operation.
-/// - Please check [`nokhwa-bindings-windows`](https://github.com/l1npengtul/nokhwa/tree/senpai/nokhwa-bindings-windows) source code to see the internal raw interface.
+/// - Please check [`jaenokhwa-bindings-windows`] source code to see the internal raw interface.
 /// - The symbolic link for the device is listed in the `misc` attribute of the [`CameraInfo`].
 /// - The names may contain invalid characters since they were converted from UTF16.
 /// - When you call new or drop the struct, `initialize`/`de_initialize` will automatically be called.
@@ -51,10 +52,12 @@ impl MediaFoundationCaptureDevice {
         let mut mf_device = MediaFoundationDevice::new(index.clone())?;
 
         let info = CameraInfo::new(
-            &mf_device.name(),
-            "MediaFoundation Camera Device",
             &mf_device.symlink(),
-            index.clone(),
+            &mf_device.name(),
+            "",
+            "",
+            "MediaFoundation Camera",
+            "",
         );
 
         let availible = mf_device.compatible_format_list()?;
@@ -249,6 +252,7 @@ impl CaptureBackendTrait for MediaFoundationCaptureDevice {
             self_ctrl.resolution(),
             &self.inner.raw_bytes()?,
             self_ctrl.format(),
+            Instant::now(),
         ))
     }
 

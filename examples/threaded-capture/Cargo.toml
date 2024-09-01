@@ -12,7 +12,7 @@ four-cc = "0.4"
 version = "0.25"
 default-features = false
 
-[dependencies.nokhwa]
+[dependencies.jaenokhwa]
 path = "../.."
 # EDIT THIS!
 features = ["input-native", "output-threaded"]

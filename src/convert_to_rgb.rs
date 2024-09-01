@@ -3,8 +3,10 @@ use ffmpeg_next::{
     frame::Video,
     software::scaling::{Context, Flags},
 };
-use nokhwa_core::buffer::FrameBuffer;
-use nokhwa_core::pixel_format::{UYVY_APPLE, YUV420};
+use jaenokhwa_core::{
+    buffer::FrameBuffer,
+    pixel_format::{GRAY, MJPEG, NV12, RAWRGB, UYVY, UYVY_APPLE, YUV420V, YUYV},
+};
 
 pub trait ConvertToRgb {
     fn convert_to_rgb(&self, _output_format: Pixel) -> Vec<u8> {
@@ -14,9 +16,18 @@ pub trait ConvertToRgb {
 
 impl ConvertToRgb for FrameBuffer {
     fn convert_to_rgb(&self, output_format: Pixel) -> Vec<u8> {
+        assert!((self.source_frame_format() != MJPEG), "MJPEG format is not supported, yet");
+
+        if self.source_frame_format() == RAWRGB {
+            return self.buffer().to_vec();
+        }
+
         let pixel_format = match self.source_frame_format() {
-            YUV420 => Pixel::YUV420P,
-            UYVY_APPLE => Pixel::UYVY422,
+            YUV420V => Pixel::YUV420P,
+            UYVY_APPLE | UYVY => Pixel::UYVY422,
+            NV12 => Pixel::NV12,
+            YUYV => Pixel::YUYV422,
+            GRAY => Pixel::GRAY8,
             _ => panic!("Unsupported pixel format {}", self.source_frame_format()),
         };
 
@@ -39,16 +50,15 @@ impl ConvertToRgb for FrameBuffer {
                 let mut input_buffer = Video::new(pixel_format, self.width(), self.height());
 
                 // Calculate expected buffer size (4 bytes per 2 pixels)
-                let expected_size = (width * height * 2) as usize;
+                let expected_size = width * height * 2;
 
                 // Check if the buffer size matches the expected size
-                if buffer.len() != expected_size {
-                    panic!(
-                        "Buffer size does not match expected size of {}... It is {}",
-                        expected_size,
-                        buffer.len(),
-                    );
-                }
+                assert!(
+                    buffer.len() != expected_size,
+                    "Buffer size does not match expected size of {}... It is {}",
+                    expected_size,
+                    buffer.len(),
+                );
 
                 // Copy the buffer directly into the Video object
                 input_buffer.data_mut(0).copy_from_slice(buffer);
@@ -59,7 +69,7 @@ impl ConvertToRgb for FrameBuffer {
                 return output_buffer.data(0).to_vec();
             }
             Err(e) => {
-                panic!("Error creating scaler: {}", e);
+                panic!("Error creating scaler: {e}");
             }
         }
     }

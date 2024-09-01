@@ -1,3 +1,7 @@
+#![deny(clippy::pedantic)]
+#![warn(clippy::all)]
+#![cfg_attr(feature = "test-fail-warning", deny(warnings))]
+#![cfg_attr(feature = "docs-features", feature(doc_cfg))]
 /*
  * Copyright 2024 Alex Hayton / The Jaenokhwa Contributors
  * Copyright 2022 l1npengtul <l1npengtul@protonmail.com> / The Nokhwa Contributors
@@ -15,4 +19,9 @@
  * limitations under the License.
  */
 
-pub mod capture;
+//! Core type definitions for `jaenokhwa`
+pub mod buffer;
+pub mod error;
+pub mod pixel_format;
+pub mod traits;
+pub mod types;

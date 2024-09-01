@@ -17,17 +17,5 @@
 # limitations under the License.
 #
 
-#
-# This Source Code Form is subject to the terms of the Mozilla Public
-# License, v. 2.0. If a copy of the MPL was not distributed with this
-# file, You can obtain one at https://mozilla.org/MPL/2.0/.
-#
-
-mkdir public
-mkdir dist
-cd ../../
-sh make-npm.sh
-cd examples/jscam || return
-npm install --save-dev webpack webpack-cli webpack-dev-server
-npm install --save ../../nokhwajs
-npm run build
+wasm-pack build --release --target web -- --features "input-jscam, output-wasm, test-fail-warning" --no-default-features
+mv pkg/jaenokhwa* jaenokhwajs/

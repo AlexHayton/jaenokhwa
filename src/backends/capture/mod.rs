@@ -1,4 +1,5 @@
 /*
+ * Copyright 2024 Alex Hayton / The Jaenokhwa Contributors
  * Copyright 2022 l1npengtul <l1npengtul@protonmail.com> / The Nokhwa Contributors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +17,7 @@
 
 #[cfg(all(feature = "input-v4l", target_os = "linux"))]
 #[cfg_attr(feature = "docs-features", doc(cfg(feature = "input-v4l")))]
-pub use nokhwa_bindings_linux::V4LCaptureDevice;
+pub use jaenokhwa_bindings_linux::V4LCaptureDevice;
 #[cfg(any(
     all(feature = "input-msmf", target_os = "windows"),
     all(feature = "docs-only", feature = "docs-nolink", feature = "input-msmf")

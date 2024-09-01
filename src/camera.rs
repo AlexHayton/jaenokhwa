@@ -1,4 +1,5 @@
 /*
+ * Copyright 2024 Alex Hayton / The Jaenokhwa Contributors
  * Copyright 2022 l1npengtul <l1npengtul@protonmail.com> / The Nokhwa Contributors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +16,7 @@
  */
 
 use four_cc::FourCC;
-use nokhwa_core::{
+use jaenokhwa_core::{
     buffer::FrameBuffer,
     error::NokhwaError,
     traits::CaptureBackendTrait,
@@ -366,8 +367,7 @@ impl Camera {
         self.device.is_stream_open()
     }
 
-    /// Will get a frame from the camera as a Raw RGB image buffer. Depending on the backend, if you have not called [`open_stream()`](CaptureBackendTrait::open_stream()) before you called this,
-    /// it will either return an error.
+    /// Will get a frame from the camera as a raw image buffer.
     /// # Errors
     /// If the backend fails to get the frame (e.g. already taken, busy, doesn't exist anymore), the decoding fails (e.g. MJPEG -> u8), or [`open_stream()`](CaptureBackendTrait::open_stream()) has not been called yet,
     /// this will error.

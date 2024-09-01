@@ -8,10 +8,9 @@ edition = "2018"
 [dependencies]
 four-cc = "0.4"
 once_cell = "1.19"
-ffmpeg-next = "7.0.1"
-turbojpeg = "1.1.0"
+ffmpeg-next = "7.0.4"
 eframe = { version = "0.28.1", default-features = false, features = ["glow"] }
 
-[dependencies.nokhwa]
+[dependencies.jaenokhwa]
 path = "../.."
 features = ["output-convert-to-rgb", "output-threaded"]

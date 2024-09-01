@@ -8,10 +8,10 @@
     "serve": "webpack-serve --config ./webpack.config.js --content public",
     "build": "npx webpack && cp src/index.html public/ && cp dist/* public/"
   },
-  "author": "l1npengtul",
+  "author": "Jaenokhwa contributors",
   "license": "MPL-2.0",
   "dependencies": {
-    "nokhwa": "file:../../nokhwajs"
+    "nokhwa": "file:../../jaenokhwajs"
   },
   "devDependencies": {
     "webpack": "^5.51.1",
