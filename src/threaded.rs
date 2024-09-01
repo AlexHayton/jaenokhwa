@@ -463,7 +463,7 @@ impl CallbackCamera {
             let last_frame = self.last_frame_captured.clone();
             let callback = self.frame_callback.clone();
             let handle = std::thread::spawn(move || {
-                camera_frame_thread_loop(camera_clone, callback, last_frame, die_bool_clone);
+                camera_frame_thread_loop(camera_clone, callback, last_frame, die_bool_clone)
             });
             *handle_lock = Some(handle);
             Ok(())

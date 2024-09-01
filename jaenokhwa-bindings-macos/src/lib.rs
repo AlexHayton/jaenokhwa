@@ -278,8 +278,6 @@ mod internal {
         }
 
         pub fn supported_formats(&self) -> Result<Vec<CameraFormat>, NokhwaError> {
-            println!("Formats {:?}", self.inner.formats());
-
             #[allow(clippy::useless_conversion)]
             Ok(self
                 .inner
@@ -328,13 +326,11 @@ mod internal {
                         })
                     }
                 }
-                Err(_) => {
-                    Err(NokhwaError::SetPropertyError {
-                        property: "lockForConfiguration".to_string(),
-                        value: "Locked".to_string(),
-                        error: "Cannot lock for configuration".to_string(),
-                    })
-                }
+                Err(_) => Err(NokhwaError::SetPropertyError {
+                    property: "lockForConfiguration".to_string(),
+                    value: "Locked".to_string(),
+                    error: "Cannot lock for configuration".to_string(),
+                }),
             }
         }
 
@@ -1248,19 +1244,19 @@ mod internal {
             let resolution = video_format_description.get_dimensions();
             let fourcc_bytes = video_format_description.get_codec_type();
             let fourcc = FourCC::from(fourcc_bytes);
-            let mut a = capture_device_format
-                .video_supported_frame_rate_ranges()
+            let frame_rate_ranges = capture_device_format.video_supported_frame_rate_ranges();
+            let mut a = frame_rate_ranges
                 .into_iter()
                 .map(move |range| {
                     let fps = range.max_frame_rate() as u32;
                     let resolution =
-                        Resolution::new(resolution.width as u32, resolution.height as u32); // FIXME: what the fuck?
+                        Resolution::new(resolution.width as u32, resolution.height as u32);
                     CameraFormat::new(resolution, fourcc, fps)
                 })
                 .collect::<Vec<_>>();
             a.sort_by_key(|a| a.frame_rate());
 
-            if a.is_empty() {
+            if !a.is_empty() {
                 Ok(a[a.len() - 1])
             } else {
                 Err(NokhwaError::GetPropertyError {

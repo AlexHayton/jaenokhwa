@@ -29,6 +29,7 @@ impl MyApp {
         // request the absolute highest frame rate camera (stress test)
         let requested = RequestedFormat::new(RequestedFormatType::AbsoluteHighestResolution);
         let mut camera = CallbackCamera::new(index, requested, move |framebuffer| {
+            println!("Callback");
             let width = framebuffer.width();
             let height = framebuffer.height();
             if unsafe { FRAME_COUNTER } == 0 {
