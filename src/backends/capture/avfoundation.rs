@@ -78,7 +78,8 @@ impl AVFoundationCaptureDevice {
         device.set_all(camera_fmt)?;
 
         let device_descriptor = device.info().clone();
-        let buffername = format!("{device_descriptor}_INDEX{index}_");
+        let unique_id = device_descriptor.unique_id();
+        let buffername = format!("{unique_id}_INDEX{index}_");
 
         let (send, recv) = flume::unbounded();
         Ok(AVFoundationCaptureDevice {
